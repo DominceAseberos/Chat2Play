@@ -1,0 +1,169 @@
+/* Viewport-native mobile layout: no document or panel scrolling. Desktop stays unchanged. */
+.setup-step{display:contents}
+.mobile-step-heading,.ready-summary,.home-pager,.chat-history-pager,.read-full-message{display:none}
+.message-detail-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;font-size:13px;color:var(--text)}
+.message-detail-pager{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:18px}
+.message-detail-pager .primary-button,.message-detail-pager .outline-button{padding:10px;font-size:11px}
+@media(max-width:700px){
+ html,body,#root{width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
+ body{touch-action:pan-x}
+ .c2p-app{height:100dvh;min-height:0;overflow:hidden}
+ .c2p-app .topbar{height:clamp(50px,8dvh,64px);flex-shrink:0;padding:0 15px}
+ .c2p-app .footer,.c2p-app .quick-steps{display:none}
+ .c2p-app .home-container{flex:1;min-height:0;max-height:none;width:100%;padding:clamp(9px,2dvh,17px) 16px 6px;display:flex;flex-direction:column;overflow:hidden}
+ .c2p-app .home-layout{flex:1;min-height:0;width:100%;max-width:470px;margin:auto;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:0}
+ .c2p-app .hero,.c2p-app .form-card{display:none;width:100%;max-width:none;margin:0;min-height:0}
+ .c2p-app .mobile-home-step-0 .hero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 6px}
+ .c2p-app .hero h1{font-size:clamp(34px,min(10.3vw,6.4dvh),52px);line-height:1.07;letter-spacing:-1.9px;margin:clamp(13px,2.4dvh,23px) 0 13px}
+ .c2p-app .hero>p{font-size:clamp(11px,1.9dvh,13px);line-height:1.55;max-width:330px}
+ .c2p-app .hero-tags{flex-wrap:wrap;justify-content:center;gap:7px;margin-top:clamp(12px,2.2dvh,22px)}
+ .c2p-app .hero-tags span{padding:8px 10px;font-size:10px}
+ .c2p-app .illustration{width:100%;max-width:330px;height:clamp(115px,23dvh,170px);margin:clamp(9px,2dvh,18px) auto 0;overflow:hidden}
+ .c2p-app .illustration-board{transform:scale(.74) rotate(-9deg);transform-origin:top center;left:30%;top:0}
+ .c2p-app .illustration-gradient{left:4%;top:0}
+ .c2p-app .illustration-message{font-size:10px;padding:8px}
+ .c2p-app .floating-left{top:55%;left:2%}.c2p-app .floating-right{top:12%;right:0}
+ .c2p-app .mobile-home-step-1 .form-card,.c2p-app .mobile-home-step-2 .form-card,.c2p-app .mobile-home-step-3 .form-card{display:flex;flex-direction:column;justify-content:center;box-shadow:none;border:1px solid var(--border);border-radius:24px;padding:clamp(17px,3dvh,24px);max-height:100%;overflow:hidden}
+ .c2p-app .form-card-title,.c2p-app .form-line{display:none}
+ .c2p-app .setup-step{display:none}
+ .c2p-app .mobile-home-step-1 .setup-step-preferences,.c2p-app .mobile-home-step-2 .setup-step-games,.c2p-app .mobile-home-step-3 .setup-step-ready{display:block}
+ .c2p-app .mobile-step-heading{display:block;margin:0 0 clamp(12px,2.5dvh,20px)}
+ .c2p-app .mobile-step-heading span{color:var(--accent);font-size:10px;font-weight:850;letter-spacing:1.7px}
+ .c2p-app .mobile-step-heading h3{font:650 clamp(23px,5dvh,31px)/1.1 "Outfit",sans-serif;letter-spacing:-.5px;color:var(--text);margin:8px 0 5px}
+ .c2p-app .mobile-step-heading p{color:var(--muted);font-size:12px;line-height:1.5;margin:0}
+ .c2p-app .form-field{margin-bottom:clamp(12px,3dvh,24px)}
+ .c2p-app .form-label{margin-bottom:8px}
+ .c2p-app .fancy-trigger{min-height:47px}
+ .c2p-app .game-choices{gap:8px}
+ .c2p-app .game-choice{min-height:clamp(68px,13dvh,96px);padding:9px;font-size:11px;gap:6px}
+ .c2p-app .game-choice-symbol{height:33px;width:33px}
+ .c2p-app .game-choice-symbol svg{width:20px;height:20px}
+ .c2p-app .fallback-choice{padding:10px;margin:3px 0 0}
+ .c2p-app .fallback-choice small{font-size:10px;line-height:1.4}
+ .c2p-app .ready-summary{display:flex;flex-direction:column;gap:11px;padding:13px;border-radius:14px;background:var(--surface-alt);margin:5px 0 18px}
+ .c2p-app .ready-summary span{display:flex;align-items:center;gap:9px;font-size:11px;color:var(--text);line-height:1.4}
+ .c2p-app .ready-summary svg{flex-shrink:0;color:var(--accent)}
+ .c2p-app .consent{font-size:12px;margin:0 0 18px}
+ .c2p-app .match-button{min-height:48px;height:48px}
+ .c2p-app .under-button{font-size:10px;margin-top:12px}
+ .c2p-app .home-pager{display:grid;grid-template-columns:minmax(82px,1fr) auto minmax(115px,1fr);align-items:center;gap:10px;flex:0 0 auto;width:100%;max-width:470px;margin:0 auto;padding:clamp(7px,1.4dvh,13px) 0 max(8px,env(safe-area-inset-bottom))}
+ .c2p-app .home-pager button{min-height:42px;border:0;border-radius:14px;padding:9px 11px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:800}
+ .c2p-app .home-pager-back{background:var(--surface-alt);color:var(--text)}
+ .c2p-app .home-pager-next{background:var(--accent);color:#fff}
+ .c2p-app .home-pager-progress{display:flex;align-items:center;justify-content:center;gap:5px}
+ .c2p-app .home-pager-progress i{width:6px;height:6px;border-radius:9px;background:var(--border)}
+ .c2p-app .home-pager-progress i.active{background:var(--accent);width:20px}
+ .c2p-app .home-pager-finish{font-size:10px;font-weight:800;text-align:center;color:var(--muted)}
+ .c2p-app .search-container{flex:1;min-height:0;overflow:hidden;padding:8px 20px;align-items:center}
+ .c2p-app .search-inner{max-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+ .c2p-app .radar-art{height:clamp(120px,27dvh,190px);width:clamp(120px,27dvh,190px);margin:0 auto 5px}
+ .c2p-app .match-morph{max-height:100%;max-width:100%}
+ .c2p-app .search-inner h2{font-size:clamp(26px,5dvh,36px);margin:9px 0}
+ .c2p-app .search-inner>p{font-size:11px;line-height:1.45;max-width:305px}
+ .c2p-app .waiting-pill{padding:10px 12px;margin:13px auto 0}
+ .c2p-app .search-chat-skeleton{display:none}
+ .c2p-app .cancel-search{margin-top:clamp(12px,3dvh,22px)}
+ .c2p-app .chat-layout{flex:1;min-height:0;max-height:none;height:auto;overflow:hidden}
+ .c2p-app .chat-card{height:100%;max-height:100%;min-height:0;overflow:hidden}
+ .c2p-app .chat-header{min-height:64px;padding:7px 11px}
+ .c2p-app .conversation{height:100%;min-height:0}
+ .c2p-app .conversation-scroll{min-height:0;overflow:hidden!important;overscroll-behavior:none;display:flex;flex-direction:column;justify-content:flex-end;padding:8px 13px}
+ .c2p-app .conversation-start{margin:auto auto;max-width:280px}
+ .c2p-app .conversation-start-icon{width:44px;height:44px;margin-bottom:8px}
+ .c2p-app .conversation-start h3{font-size:19px}
+ .c2p-app .conversation-start p{font-size:11px;line-height:1.5}
+ .c2p-app .chat-history-pager{display:flex;flex:0 0 auto;justify-content:space-between;align-items:center;gap:5px;padding:6px 9px;background:var(--surface-alt);border-bottom:1px solid var(--border)}
+ .c2p-app .chat-history-pager button{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--border);background:var(--surface);border-radius:10px;color:var(--text);font-size:11px;padding:6px 8px}
+ .c2p-app .chat-history-pager span{font-size:10px;font-weight:750;color:var(--muted);white-space:nowrap}
+ .c2p-app .message-line{margin:7px 0;max-height:100%;flex-shrink:1}
+ .c2p-app .message-bubble{max-height:min(35dvh,235px);overflow:hidden}
+ .c2p-app .message-bubble>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:8;line-clamp:8;overflow:hidden}
+ .c2p-app .gif-message{max-height:25dvh}
+ .c2p-app .read-full-message{display:flex;align-items:center;gap:2px;border:0;background:none;color:var(--accent);font-size:11px;font-weight:800;margin-top:6px;padding:3px}
+ .c2p-app .composer-area{padding:5px 7px max(5px,env(safe-area-inset-bottom))}
+ .c2p-app .composer{min-height:48px;padding:4px;margin:0 6px}
+ .c2p-app .composer textarea{min-height:34px;max-height:52px}
+ .c2p-app .chat-dock{margin-top:5px;padding-top:4px}
+ .c2p-app .chat-dock button{min-height:40px;padding:3px}
+ .c2p-app .picker-holder{max-height:min(70dvh,430px);overflow:hidden;bottom:100%}
+ .c2p-app .game-sidebar{position:fixed;top:0;bottom:0;height:100dvh;max-height:100dvh;overflow:hidden;border-radius:0;padding:clamp(12px,3dvh,20px);z-index:70}
+ .c2p-app .sidebar-top p{margin-bottom:12px}
+ .c2p-app .game-list{gap:8px}
+ .c2p-app .sidebar-game{padding:8px;min-height:50px}
+ .c2p-app .sidebar-game-icon{width:34px;height:34px}
+ .c2p-app .sidebar-info{margin-top:10px;padding:9px}
+ .c2p-app .sidebar-love{margin-top:10px;padding:9px}
+ .c2p-app .shared-games{margin-top:8px}
+ .c2p-app .modal-body{max-height:calc(100dvh - 18px);overflow:hidden;padding:18px}
+ .c2p-app .gif-tab{max-height:none;overflow:hidden}
+}
+@media(max-width:700px) and (max-height:640px){
+ .c2p-app .illustration{height:112px}
+ .c2p-app .hero h1{font-size:clamp(31px,8.5vw,42px)}
+ .c2p-app .hero-tags{margin-top:10px}
+ .c2p-app .mobile-step-heading{margin-bottom:10px}
+ .c2p-app .game-choice{min-height:66px}
+ .c2p-app .game-choice-symbol{height:29px;width:29px}
+ .c2p-app .fallback-choice{padding:8px}
+ .c2p-app .ready-summary{margin-bottom:10px}
+ .c2p-app .conversation-start p{font-size:10px}
+ .c2p-app .sidebar-info,.c2p-app .sidebar-love,.c2p-app .shared-games{display:none}
+}
+@media(max-width:700px) and (max-height:510px){
+ .c2p-app .illustration{display:none}
+ .c2p-app .hero-tags{display:none}
+ .c2p-app .game-choice{min-height:56px}
+ .c2p-app .fallback-choice small{display:none}
+ .c2p-app .search-inner>p{display:none}
+}
+
+/* Reactions and emojis show pages rather than scrollable grids. */
+.mobile-gif-switch,.gif-pages,.emoji-pages{display:none}
+@media(max-width:700px){
+ .c2p-app .mobile-gif-switch{display:flex;gap:7px;margin-bottom:9px}
+ .c2p-app .mobile-gif-switch button{flex:1;border:1px solid var(--border);border-radius:10px;background:var(--surface-alt);color:var(--muted);padding:7px 4px;font-size:11px;font-weight:750}
+ .c2p-app .mobile-gif-switch button.active{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+ .c2p-app .gif-tab[data-source="local"] .online-gif-section,
+ .c2p-app .gif-tab[data-source="giphy"] .local-gif-section{display:none}
+ .c2p-app .gif-tab .gif-grid{overflow:hidden;max-height:none;gap:6px;margin:5px 0 8px}
+ .c2p-app .gif-tab .gif-local-grid button,
+ .c2p-app .gif-tab .gif-online-grid button{height:clamp(48px,9dvh,67px);min-height:0}
+ .c2p-app .gif-tab[data-page="0"] .gif-grid>button:nth-child(n+7),
+ .c2p-app .gif-tab[data-page="1"] .gif-grid>button:nth-child(-n+6){display:none}
+ .c2p-app .gif-paste{margin-top:7px}
+ .c2p-app .gif-pages{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:6px}
+ .c2p-app .gif-pages button,.emoji-pages button{background:var(--surface-alt);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:10px;font-weight:800;padding:6px 10px}
+ .c2p-app .gif-pages span,.emoji-pages span{font-size:10px;color:var(--muted)}
+ .c2p-app .gif-group-label{margin:3px 0 7px}
+ .c2p-app .gif-tab{padding:6px 11px 10px}
+ .local-emoji-picker{height:min(290px,49dvh)}
+ .emoji-category-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;overflow:hidden;padding:0 1px 6px}
+ .emoji-category-tabs button{min-width:0;padding:5px 1px;font-size:9px;white-space:nowrap}
+ .emoji-local-search{padding:7px;margin-bottom:5px}
+ .emoji-local-scroll{overflow:hidden;flex:1}
+ .emoji-local-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:0}
+ .emoji-local-grid button{height:33px}
+ .emoji-local-grid img{width:25px;height:25px}
+ .emoji-pages{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:3px}
+ .emoji-credits{padding:4px 2px 1px;font-size:8px}
+}
+
+
+/* Keep one full-screen chat, but never replace its history with a one-message
+   mobile pager. Only the conversation pane scrolls; the page stays fixed. */
+@media(max-width:700px){
+ body{touch-action:auto}
+ .c2p-app .conversation-scroll{
+  display:block;
+  min-height:0;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scrollbar-width:thin;
+ }
+ .c2p-app .message-line{flex-shrink:0}
+ .c2p-app .conversation-start{margin:16px auto 22px}
+ .c2p-app .chat-history-pager{display:none}
+}

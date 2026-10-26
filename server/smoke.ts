@@ -1,0 +1,70 @@
+import { io, type Socket } from "socket.io-client";
+import assert from "node:assert/strict";
+const a = io(process.env.LIVE_TEST_URL||"http://localhost:3001",{autoConnect:false,transports:["websocket"],reconnection:false});
+const b = io(process.env.LIVE_TEST_URL||"http://localhost:3001",{autoConnect:false,transports:["websocket"],reconnection:false});
+function wait(socket:Socket,event:string,check:(v:any)=>boolean=()=>true,timeout=9000):Promise<any>{
+ return new Promise((resolve,reject)=>{
+   const handler=(value:any)=>{if(!check(value))return;clearTimeout(timer);socket.off(event,handler);resolve(value);};
+   const timer=setTimeout(()=>{socket.off(event,handler);reject(new Error("Timeout waiting: "+event));},timeout);
+   socket.on(event,handler);
+ });
+}
+const game=(s:Socket,kind:string,phase:string,check:(v:any)=>boolean=()=>true)=>
+ wait(s,"game:state",g=>g?.kind===kind && g.phase===phase && check(g));
+async function test(){
+ const ca=wait(a,"connect"),cb=wait(b,"connect");a.connect();b.connect();await Promise.all([ca,cb]);
+ console.log("✓ Two websocket clients connected");
+ const ma=wait(a,"match:found"),mb=wait(b,"match:found");
+ a.emit("queue:join",{gender:"woman",lookingFor:"any",interests:["ttt","rps"],isAdult:true});
+ b.emit("queue:join",{gender:"man",lookingFor:"woman",interests:["ttt"],isAdult:true});
+ const [matchA,matchB]=await Promise.all([ma,mb]);
+ assert.equal(matchA.side,0);assert.equal(matchB.side,1);assert.deepEqual(matchA.commonGames,["ttt"]);
+ console.log("✓ Reciprocal preference matching");
+ const m1=wait(a,"chat:message"),m2=wait(b,"chat:message");
+ a.emit("chat:send",{text:"hello!"});
+ const [ra,rb]=await Promise.all([m1,m2]);assert.equal(ra.text,"hello!");assert.equal(ra.text,rb.text);
+ console.log("✓ Chat relayed to both clients");
+ const invite=game(b,"ttt","invite");a.emit("game:propose","ttt");await invite;
+ const aStart=game(a,"ttt","playing"),bStart=game(b,"ttt","playing");
+ b.emit("game:respond",true);
+ const [started]=await Promise.all([aStart,bStart]);
+ const playedA=game(a,"ttt","playing",g=>g.board?.[0]!==null),playedB=game(b,"ttt","playing",g=>g.board?.[0]!==null);
+ (started.turn===0?a:b).emit("game:move",0);
+ const [played]=await Promise.all([playedA,playedB]);assert.equal(played.board[0],started.turn);
+ console.log("✓ Server-authoritative Tic-Tac-Toe");
+ const closeA=wait(a,"game:state",g=>g===null),closeB=wait(b,"game:state",g=>g===null);
+ a.emit("game:close",{id:started.id});await Promise.all([closeA,closeB]);
+ const inviteRps=game(b,"rps","invite");a.emit("game:propose","rps");await inviteRps;
+ const setup=game(a,"rps","settings");b.emit("game:respond",true);
+ const settings=await setup;
+ const loadA=game(a,"rps","loading"),loadB=game(b,"rps","loading");
+ a.emit("rps:configure",{id:settings.id,targetWins:1});
+ const [loading]=await Promise.all([loadA,loadB]);
+ assert.deepEqual(loading.sceneReady,[false,false]);
+ const startA=game(a,"rps","playing"),startB=game(b,"rps","playing");
+ a.emit("rps:scene-ready",{id:settings.id});b.emit("rps:scene-ready",{id:settings.id});
+ await Promise.all([startA,startB]);
+ const hiddenA=game(a,"rps","playing",g=>g.ready[0]&&!g.ready[1]);
+ const hiddenB=game(b,"rps","playing",g=>g.ready[0]&&!g.ready[1]);
+ a.emit("game:move","rock");const [hidden]=await Promise.all([hiddenA,hiddenB]);
+ assert.equal(hidden.reveal,undefined);
+ const revealA=game(a,"rps","playing",g=>g.rps?.stage==="reveal");
+ const revealB=game(b,"rps","playing",g=>g.rps?.stage==="reveal");
+ b.emit("game:move","scissors");
+ const [reveal]=await Promise.all([revealA,revealB]);
+ assert.equal(reveal.reveal.winner,0);
+ const resultA=game(a,"rps","finished"),resultB=game(b,"rps","finished");
+ const [result]=await Promise.all([resultA,resultB]);
+ assert.equal(result.rps.scores[0],1);
+ console.log("PASS secret simultaneous Rock Paper Scissors after 3-second selection and result animation");
+ const firstA=wait(a,"like:state",s=>s.yours&&!s.mutual),firstB=wait(b,"like:state",s=>s.theirs&&!s.mutual);
+ a.emit("like:toggle");await Promise.all([firstA,firstB]);
+ const bothA=wait(a,"like:state",s=>s.mutual),bothB=wait(b,"like:state",s=>s.mutual);
+ b.emit("like:toggle");await Promise.all([bothA,bothB]);
+ console.log("✓ Mutual session-only likes");
+ const interrupted=wait(b,"partner:connection",v=>v.connected===false);
+ const end=wait(b,"match:ended",()=>true,16000);a.disconnect();await interrupted;assert.match((await end).reason,/disconnected/);
+ console.log("✓ Disconnect clears room");
+ console.log("ALL SMOKE TESTS PASSED");
+}
+test().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>{a.disconnect();b.disconnect();});

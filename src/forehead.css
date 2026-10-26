@@ -1,0 +1,428 @@
+.forehead-overlay{position:fixed;inset:0;z-index:110;background:#121323;display:flex;align-items:center;justify-content:center;padding:18px;overflow:hidden;color:#302d4a}
+.forehead-shell{display:flex;flex-direction:column;width:min(100%,620px);height:min(100%,850px);overflow:hidden;border-radius:27px;background:linear-gradient(145deg,#f6f1ff,#fffdf9 43%,#e8f0ff);border:1px solid #ffffff90;box-shadow:0 30px 100px #0008;isolation:isolate}
+.forehead-header{display:flex;align-items:center;gap:12px;min-height:62px;padding:11px 17px;background:rgba(255,255,255,.87);border-bottom:1px solid #7775a824}
+.forehead-header button{height:37px;width:37px;flex:0 0 37px;display:grid;place-items:center;border:1px solid #78729b35;border-radius:12px;background:#f2edf9;color:#5f5488}
+.forehead-heading{flex:1;min-width:0}.forehead-heading strong{display:flex;align-items:center;gap:7px;font:800 19px Outfit,sans-serif;letter-spacing:-.6px;color:#433660}
+.forehead-heading strong svg{color:#b78adb}.forehead-heading span{font:800 9px DM Sans,sans-serif;letter-spacing:1.7px;color:#9590ac}
+.forehead-scoreline{min-height:69px;display:grid;grid-template-columns:85px 1fr 85px;align-items:center;gap:12px;padding:7px 17px;background:rgba(248,242,252,.85)}
+.forehead-score{display:flex;gap:10px;align-items:center;justify-content:center;min-height:45px;background:white;border:1px solid #a9a2bd3b;border-radius:16px;color:#55516d}
+.forehead-score.is-active{border-color:#bd95e6;background:#f4eafd}
+.forehead-score small{font-size:10px;font-weight:800}.forehead-score b{font:800 26px Outfit}
+.forehead-round{text-align:center}.forehead-round span{display:block;font-size:9px;font-weight:800;letter-spacing:1.4px;color:#82799b}.forehead-round strong{font:900 15px Outfit;color:#6d4c9f}
+.forehead-stage{min-height:0;flex:1;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 20%,#fffefd 10%,#d9e4ff 55%,#a7b5e2)}
+.forehead-scene{width:100%;height:100%;position:relative;overflow:hidden}
+.forehead-scene canvas{width:100%;height:100%;display:block;touch-action:pan-y}
+.forehead-scene-fallback{display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding:22px;text-align:center;position:absolute;inset:0;font-weight:700;color:#4f3b78}
+.forehead-scene-fallback strong{font-size:27px;font-weight:900;padding:14px;border:3px solid #9183bc;border-radius:15px;background:white}
+.forehead-scene[data-fallback=true] .forehead-scene-fallback{display:flex}
+.forehead-first-person,.forehead-scene-sticker{position:absolute;pointer-events:none;display:flex;align-items:center;gap:7px;font-size:9px;font-weight:900;color:#74678e;border-radius:50px;box-shadow:0 6px 17px #4c457a18}
+.forehead-first-person{top:10px;left:12px;padding:8px 11px;background:#ffffffbd;letter-spacing:1.3px}
+.forehead-first-person b{color:#38a78e;font-size:9px}
+.forehead-scene-sticker{right:12px;top:10px;background:#fff7e4dd;color:#8c6d43;padding:8px 12px}
+.forehead-speech{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);max-width:calc(100% - 30px);white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px;background:#fffdf7e9;border:1px solid #efdfc8;border-radius:40px;padding:10px 13px;color:#6b5681;font-size:11px;font-weight:800}
+.forehead-speech svg{flex:0 0 auto}
+.forehead-bottom{display:flex;flex-direction:column;gap:6px;padding:12px 18px 15px;background:#fffcff;box-shadow:0 -8px 25px #9891bf13}
+.forehead-instruction{font-size:12px;font-weight:650;line-height:1.4;text-align:center;color:#605d77;margin:0;min-height:34px}
+.forehead-clues{display:flex;gap:6px;justify-content:center;align-items:center;min-height:27px;overflow:hidden;white-space:nowrap}
+.forehead-clue{display:inline-flex;align-items:center;gap:5px;background:#f0e9fd;border:1px solid #dad0e9;border-radius:9px;padding:5px 7px;color:#644f80;font-size:10px;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:49%}
+.forehead-status{color:#9890a4;font-size:10px;font-weight:700}
+.forehead-form{display:flex;gap:8px;min-height:48px;width:100%;margin:0}
+.forehead-form input{min-width:0;flex:1;border:1px solid #c5bbd8;border-radius:15px;background:#f7f4fe;color:#403659;padding:12px 15px;font-size:13px;outline:none}
+.forehead-form input:focus{border-color:#a07ac8;box-shadow:0 0 0 3px #bca0e633}
+.forehead-form button{display:grid;place-items:center;flex:0 0 48px;border:0;border-radius:15px;background:#765cb7;color:white}
+.forehead-form button:disabled{opacity:.4}
+.forehead-bottom-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px}
+.forehead-mini-status{font-size:10px;color:#9b91a5;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.forehead-skip{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;background:#f0e8f8;border:1px solid #ded1ee;border-radius:12px;padding:8px 11px;color:#695184;font-size:11px;font-weight:800}
+.forehead-rematch{display:flex;justify-content:center;align-items:center;gap:7px;min-height:49px;border:0;border-radius:14px;background:#7256b5;color:white;font-weight:800}
+@media(max-width:700px){
+ .forehead-overlay{padding:0}
+ .forehead-shell{height:100dvh;max-height:100dvh;width:100%;border-radius:0;border:0}
+ .forehead-header{min-height:55px;padding:7px max(12px,env(safe-area-inset-left))}
+ .forehead-heading strong{font-size:16px}.forehead-heading span{font-size:8px}
+ .forehead-header button{width:36px;height:36px;flex-basis:36px}
+ .forehead-scoreline{min-height:61px;grid-template-columns:70px 1fr 70px;gap:5px;padding:6px 11px}
+ .forehead-score{min-height:42px;gap:7px}.forehead-score b{font-size:21px}.forehead-score small{font-size:9px}
+ .forehead-round strong{font-size:13px}.forehead-round span{font-size:8px}
+ .forehead-bottom{padding:8px 13px max(10px,env(safe-area-inset-bottom));gap:5px}
+ .forehead-instruction{font-size:11px;min-height:28px}
+ .forehead-form{min-height:46px}.forehead-form button{flex-basis:46px}
+ .forehead-speech{font-size:10px;bottom:9px;padding:8px}
+ .forehead-scene-sticker{font-size:9px}
+ .forehead-first-person{font-size:8px}
+}
+@media(max-width:700px) and (max-height:660px){
+ .forehead-header{min-height:49px}
+ .forehead-scoreline{min-height:52px;padding-top:3px;padding-bottom:3px}
+ .forehead-score{min-height:37px}
+ .forehead-bottom{gap:4px;padding-top:6px;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+ .forehead-instruction{font-size:10px;min-height:25px}
+ .forehead-clues{min-height:24px}.forehead-form{min-height:43px}
+ .forehead-bottom-row{min-height:26px}
+ .forehead-scene-sticker{display:none}
+}
+
+/* Live, ephemeral chat and clue bubbles flanking the seated partner. */
+.forehead-float-layer{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+.forehead-float-column{position:absolute;top:47%;width:clamp(104px,30%,162px);display:flex;flex-direction:column;gap:9px}
+.forehead-float-column.mine{left:8px;align-items:flex-start}
+.forehead-float-column.theirs{right:8px;align-items:flex-end}
+.forehead-float-bubble{max-width:100%;min-width:64px;background:rgba(250,248,255,.92);border:1px solid rgba(158,128,192,.45);border-radius:15px 15px 15px 5px;box-shadow:0 9px 25px rgba(37,31,81,.15);padding:9px 10px;color:#413553;animation:forehead-chat-pop .34s cubic-bezier(.2,.8,.3,1) both;overflow-wrap:anywhere;backdrop-filter:blur(6px)}
+.forehead-float-column.theirs .forehead-float-bubble{border-radius:15px 15px 5px 15px;background:rgba(255,243,236,.93);border-color:rgba(232,165,158,.45)}
+.forehead-float-bubble.hint{border-color:#d8a7db;background:rgba(253,238,255,.95)}
+.forehead-float-bubble.guess{background:rgba(238,250,255,.94);border-color:#91bfda}
+.forehead-float-bubble>span{display:block;white-space:nowrap;font-size:8px;font-weight:900;letter-spacing:1.05px;color:#817095;margin-bottom:5px}
+.forehead-float-bubble p{font-size:11px;line-height:1.35;font-weight:700;margin:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}
+@keyframes forehead-chat-pop{from{opacity:0;transform:translateY(13px) scale(.86)}to{opacity:1;transform:translateY(0) scale(1)}}
+.forehead-entry-tabs{display:flex;align-items:center;gap:6px;min-height:28px;width:100%}
+.forehead-entry-tabs button{border:1px solid #dcd1eb;padding:5px 10px;border-radius:999px;min-height:27px;background:#f6f1fd;color:#7b6c95;font-size:10px;font-weight:800;white-space:nowrap}
+.forehead-entry-tabs button.selected{background:#7862b0;color:#fff;border-color:#7862b0}
+.forehead-entry-tabs>span{font-size:9px;font-weight:700;color:#a49db2;text-align:right;flex:1;line-height:1.2}
+@media(max-width:700px){
+ .forehead-float-column{top:47%;width:clamp(97px,30vw,137px)}
+ .forehead-float-column.mine{left:7px}
+ .forehead-float-column.theirs{right:7px}
+ .forehead-float-bubble{padding:7px 8px;border-radius:13px 13px 13px 4px}
+ .forehead-float-bubble>span{font-size:7px;letter-spacing:.65px;margin-bottom:3px}
+ .forehead-float-bubble p{font-size:10px;line-height:1.28}
+ .forehead-entry-tabs>span{font-size:8px}
+}
+@media(max-width:700px) and (max-height:650px){
+ .forehead-entry-tabs{min-height:25px}
+ .forehead-entry-tabs button{min-height:25px;padding:4px 9px}
+ .forehead-entry-tabs>span{display:none}
+ .forehead-float-column{top:47%;width:clamp(96px,29vw,130px);gap:5px}
+}
+@media(prefers-reduced-motion:reduce){
+ .forehead-float-bubble{animation:none}
+}
+
+.forehead-entry-tabs button{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+
+/* Pinoy Henyo: category questions and binary yes/no clue giving */
+.forehead-ask-bar{display:flex;gap:8px;align-items:center;justify-content:center;min-height:42px}
+.forehead-ask-button{border:1px solid #af95da;background:#ebe1fa;color:#644a96;border-radius:13px;padding:9px 12px;display:flex;gap:7px;align-items:center;justify-content:center;min-height:39px;flex:1;font-size:12px;font-weight:900}
+.forehead-ask-button:disabled{opacity:.65}
+.forehead-ask-bar>span{font-size:9px;font-weight:750;color:#a397ac;text-align:center;max-width:70px;flex:0 0 70px}
+.forehead-answer-bar{display:flex;gap:11px;min-height:49px}
+.forehead-answer-bar button{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;flex:1;min-height:46px;font-size:14px;font-weight:900;border:1px solid transparent}
+.forehead-answer-yes{background:#d2f7e3;color:#197251;border-color:#8cdbba!important}
+.forehead-answer-no{background:#fee0e4;color:#ae475e;border-color:#eea5b4!important}
+.forehead-answer-bar button:disabled{opacity:.35}
+.forehead-category-panel{position:absolute;left:9px;right:9px;bottom:8px;z-index:8;background:rgba(253,250,255,.97);border:1px solid #d8c7ea;border-radius:21px;box-shadow:0 22px 55px #33315859;padding:13px;max-height:calc(100% - 12px);overflow:hidden;backdrop-filter:blur(14px);display:flex;flex-direction:column;gap:8px}
+.forehead-category-title{display:flex;align-items:center;justify-content:space-between;font-size:15px;color:#534071}
+.forehead-category-title button{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:8px;background:#f1ebf8;color:#56466e}
+.forehead-category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;min-height:0}
+.forehead-category-grid button{min-height:34px;padding:6px 3px;border:1px solid #d5c5e6;border-radius:11px;background:#f6eeff;color:#675181;font-size:10px;line-height:1.1;font-weight:800;overflow-wrap:anywhere}
+.forehead-category-grid button:disabled{opacity:.38;text-decoration:line-through}
+.forehead-category-grid button:not(:disabled):active{background:#e4d4f4}
+.forehead-category-panel small{text-align:center;color:#9386aa;font-size:9px}
+.forehead-clues{flex-wrap:wrap}
+.forehead-clue{flex:0 1 auto}
+@media(max-width:700px){
+ .forehead-answer-bar{min-height:43px;gap:9px}
+ .forehead-answer-bar button{min-height:42px}
+ .forehead-ask-bar{min-height:36px}
+ .forehead-ask-button{min-height:36px}
+ .forehead-category-panel{padding:9px;gap:5px}
+ .forehead-category-title{font-size:13px}
+ .forehead-category-grid{gap:4px}
+ .forehead-category-grid button{min-height:31px;padding:5px 2px;font-size:9px}
+ .forehead-category-panel small{font-size:8px}
+}
+@media(max-width:700px) and (max-height:650px){
+ .forehead-instruction{min-height:23px;font-size:10px}
+ .forehead-ask-bar{min-height:32px}
+ .forehead-ask-button{min-height:32px;padding:6px}
+ .forehead-answer-bar{min-height:37px}
+ .forehead-answer-bar button{min-height:37px}
+ .forehead-category-panel{padding:7px;gap:4px}
+ .forehead-category-grid{gap:3px}
+ .forehead-category-grid button{min-height:27px}
+ .forehead-category-panel small{display:none}
+}
+
+/* Pinoy Henyo setup appears in the portal above either chat or 3D game. */
+.henyo-setup{display:flex;flex-direction:column;gap:10px}
+.henyo-setup-label{font-size:10px;font-weight:900;letter-spacing:1px;color:var(--muted)}
+.henyo-setup-choices,.henyo-setup-time{display:grid;gap:7px}
+.henyo-setup-choices{grid-template-columns:repeat(3,minmax(0,1fr))}
+.henyo-setup-time{grid-template-columns:repeat(5,minmax(0,1fr))}
+.henyo-setup-choices button,.henyo-setup-time button{border:1px solid var(--border);background:var(--surface-alt);color:var(--text);font-size:12px;font-weight:850;border-radius:12px;min-height:42px}
+.henyo-setup-choices button.selected,.henyo-setup-time button.selected{border:2px solid var(--accent);color:var(--accent);background:var(--accent-light)}
+.henyo-setup-note{font-size:11px;line-height:1.6;color:var(--muted);margin:0;background:var(--surface-alt);padding:12px;border-radius:12px}
+.henyo-invite-summary{border-radius:9px;background:var(--accent-light);color:var(--accent);font-size:10px;font-weight:850;letter-spacing:.3px;padding:8px;margin:8px 0;text-align:center}
+/* First-person chamber overlay and left-side authoritative countdown. */
+.henyo-clock{position:absolute;left:11px;top:51px;z-index:7;display:flex;flex-direction:column;gap:4px;min-width:92px;padding:8px 10px;border:1px solid rgba(177,220,250,.75);border-radius:12px;background:rgba(29,41,77,.78);color:#f7fcff;box-shadow:0 9px 30px #191a4944;backdrop-filter:blur(9px);pointer-events:none}
+.henyo-clock small{font-size:8px;letter-spacing:1.5px;font-weight:950}
+.henyo-clock strong{font-family:Outfit,sans-serif;font-size:24px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1}
+.henyo-clock-meter{height:4px;background:rgba(255,255,255,.23);border-radius:6px;overflow:hidden}
+.henyo-clock-meter i{display:block;height:100%;background:#72e8e6;border-radius:6px;transition:width .12s linear}
+.henyo-clock-urgent{border-color:#ffb28f;background:rgba(105,42,66,.88)}
+.henyo-clock-urgent strong{color:#ffdba8}
+.henyo-clock-urgent .henyo-clock-meter i{background:#ffae93}
+.forehead-stage .forehead-speech{z-index:6}
+@media(max-width:700px){
+ .henyo-clock{top:45px;left:8px;padding:7px 8px;min-width:77px}
+ .henyo-clock strong{font-size:21px}
+}
+
+/* Clean turn-based Pinoy Henyo: no water or crowd UI. */
+.forehead-stage{background:radial-gradient(ellipse at 50% 35%,#f4eaff,#cac8ed 80%);}
+.forehead-scene canvas{touch-action:none}
+.forehead-mini-status{overflow-wrap:anywhere}
+.henyo-clock{top:45px}
+
+/* Separate server-authoritative clocks: one counts down, the other freezes. */
+.forehead-stage .henyo-dual-clocks{position:absolute;z-index:8;inset:42px 9px auto;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;pointer-events:none}
+.forehead-stage .henyo-player-timer{display:flex;flex-direction:column;gap:4px;min-width:91px;padding:8px 10px;border-radius:13px;border:1px solid rgba(199,197,232,.75);color:#f8f9ff;background:rgba(31,34,65,.89);box-shadow:0 8px 20px rgba(26,20,53,.17);backdrop-filter:blur(6px)}
+.forehead-stage .henyo-player-timer small{font-size:8px;font-weight:900;letter-spacing:.8px;display:flex;gap:6px;align-items:center;justify-content:space-between}
+.forehead-stage .henyo-player-timer small span{font-size:7px;color:#d3cce1;letter-spacing:0}
+.forehead-stage .henyo-player-timer strong{font-family:Outfit,sans-serif;font-size:21px;font-variant-numeric:tabular-nums;line-height:1.15}
+.forehead-stage .henyo-player-timer.running{border-color:#9de8db;box-shadow:0 0 0 2px rgba(98,229,204,.15),0 8px 20px rgba(26,20,53,.17)}
+.forehead-stage .henyo-player-timer.running small span{color:#85f2ce}
+.forehead-stage .henyo-player-timer.paused{opacity:.78}
+.forehead-stage .henyo-player-timer.urgent{border-color:#ffbd96}
+.forehead-stage .henyo-player-timer.urgent strong{color:#ffdda5}
+.forehead-stage .henyo-player-timer.urgent .henyo-clock-meter i{background:#f4a18e}
+.forehead-stage .henyo-player-timer .henyo-clock-meter{height:4px}
+.forehead-stage .henyo-player-timer .henyo-clock-meter i{background:#8be0d5}
+.henyo-result-banner{position:absolute;z-index:11;left:50%;top:51%;transform:translate(-50%,-50%);width:min(84%,290px);display:flex;flex-direction:column;align-items:center;gap:7px;padding:16px 13px;border:1px solid rgba(229,204,255,.95);border-radius:18px;background:rgba(35,29,71,.96);color:#fff;box-shadow:0 16px 45px #28214388;text-align:center}
+.henyo-result-banner>svg{color:#ffd99f}
+.henyo-result-banner>strong{font-size:19px;font-weight:900}
+.henyo-result-banner>span{font-weight:750;font-size:11px}
+.henyo-result-banner>small{font-size:10px;opacity:.84}
+.henyo-finished-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}
+.henyo-finished-actions button{min-width:0;min-height:43px;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;font-size:11px;font-weight:850}
+.henyo-finished-actions .forehead-rematch{margin:0}
+.henyo-finished-actions .forehead-result-close{border:1px solid #c8c0d7;background:#f6f1fa;color:#554c6c}
+@media(max-width:390px){
+ .forehead-stage .henyo-dual-clocks{inset:39px 6px auto;gap:7px}
+ .forehead-stage .henyo-player-timer{min-width:69px;padding:6px 7px;gap:3px}
+ .forehead-stage .henyo-player-timer strong{font-size:17px}
+ .forehead-stage .henyo-player-timer small{font-size:7px}
+ .forehead-stage .henyo-player-timer small span{font-size:6px}
+}
+
+/* Pinoy Henyo UX polish: floating scoreboard, no full-width filled strip. */
+.forehead-shell{position:relative}
+.forehead-header{position:relative;z-index:14}
+.forehead-scoreline{
+ position:absolute;top:69px;left:14px;right:14px;min-height:0;
+ background:transparent;border:0;padding:0;z-index:10;
+ grid-template-columns:minmax(0,86px) minmax(0,1fr) minmax(0,86px);
+ gap:12px;align-items:start;pointer-events:none
+}
+.forehead-scoreline .forehead-score{
+ min-height:42px;border:1px solid rgba(208,195,232,.83);
+ background:rgba(255,252,255,.94);box-shadow:0 7px 22px #3d2c6430;
+ backdrop-filter:blur(9px);border-radius:15px
+}
+.forehead-scoreline .forehead-score.is-active{
+ border-color:#a883dd;background:rgba(244,235,255,.96)
+}
+.forehead-round{
+ justify-self:center;min-width:116px;max-width:100%;
+ padding:8px 13px;background:rgba(255,252,255,.95);
+ border:1px solid rgba(205,185,230,.93);
+ border-radius:15px;box-shadow:0 8px 25px rgba(51,33,83,.15);
+ backdrop-filter:blur(10px)
+}
+.forehead-round span{font-size:9px;line-height:1.2}
+.forehead-round strong{font-size:13px;line-height:1.35;white-space:nowrap}
+.forehead-stage .henyo-dual-clocks{top:87px}
+/* Centered SVG score feedback sits on top of the scene, never shifts layout. */
+.henyo-success-overlay{
+ position:absolute;inset:0;z-index:20;pointer-events:none;
+ display:flex;align-items:center;justify-content:center;
+ animation:henyo-feedback-fade 1.12s ease-out both
+}
+.henyo-success-toast{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ gap:5px;min-width:146px;padding:16px 19px;border-radius:22px;
+ border:1px solid rgba(225,214,248,.87);color:#fff;
+ background:rgba(39,34,74,.93);box-shadow:0 20px 55px #241a4f80;
+ animation:henyo-feedback-pop .6s cubic-bezier(.17,.79,.28,1.04) both
+}
+.henyo-success-icon{display:grid;place-items:center;color:#a6f8d2;background:rgba(115,230,185,.14);width:52px;height:52px;border-radius:999px}
+.henyo-success-toast strong{font-size:19px;font-weight:900}
+.henyo-success-toast small{font-size:12px;font-weight:800;color:#abf2d5}
+.henyo-success-overlay.pass .henyo-success-icon{color:#e0d0ff;background:rgba(173,144,230,.15)}
+@keyframes henyo-feedback-fade{0%{opacity:0}11%{opacity:1}73%{opacity:1}100%{opacity:0}}
+@keyframes henyo-feedback-pop{0%{transform:translateY(13px) scale(.8)}40%{transform:translateY(0) scale(1.035)}100%{transform:translateY(0) scale(1)}}
+/* Lower compact, touch-friendly gameplay controls. */
+.forehead-bottom{gap:7px;padding:10px 14px max(12px,env(safe-area-inset-bottom));flex-shrink:0}
+.forehead-bottom.giver-controls{gap:10px;padding-top:15px;padding-bottom:max(17px,env(safe-area-inset-bottom))}
+.henyo-giver-prompt{display:flex;align-items:center;justify-content:center;gap:7px;min-height:22px;color:#64547c;font-size:11px;font-weight:750}
+.henyo-giver-prompt span{color:#9386a4;font-weight:600}
+.forehead-answer-bar{min-height:46px;gap:11px}
+.forehead-answer-bar button{min-height:46px;font-size:13px;border-radius:13px}
+.forehead-ask-bar{min-height:34px;justify-content:flex-start;gap:8px}
+.forehead-ask-button{min-height:34px;max-height:36px;padding:7px 10px;border-radius:12px;font-size:11px;flex:1}
+.forehead-ask-bar>span{max-width:none;flex:0 0 auto;font-size:9px;white-space:nowrap}
+.forehead-form{min-height:44px}
+.forehead-form input{padding:10px 12px;border-radius:12px;font-size:12px}
+.forehead-form button{flex-basis:44px;border-radius:12px}
+.forehead-clues{min-height:0;justify-content:flex-start;gap:5px}
+.forehead-clue{padding:4px 7px}
+.henyo-safe-pass{display:flex;justify-content:flex-start;min-height:30px;margin-bottom:3px}
+.henyo-safe-pass .forehead-skip{
+ min-height:30px;padding:5px 9px;border-radius:9px;font-size:10px;
+ border-color:#ddd4e8;background:#f8f5fc;color:#776987
+}
+.henyo-pass-confirm{
+ display:flex;align-items:center;justify-content:space-between;gap:5px;
+ padding:4px 6px;background:#fff7eb;border:1px solid #e8cdb9;
+ border-radius:10px;min-height:36px
+}
+.henyo-pass-confirm span{font-size:10px;font-weight:750;color:#806252;flex:1}
+.henyo-pass-confirm button{flex:0 0 auto;min-height:29px;border-radius:8px;padding:5px 7px;border:1px solid #dfcabb;background:#fffaf4;color:#76584b;font-size:10px;font-weight:800}
+.henyo-pass-confirm button.confirm{background:#9a6b65;color:white;border-color:#9a6b65}
+.henyo-local-notice{font-size:10px;color:#815278;margin:1px 0 0;line-height:1.3}
+.forehead-entry-tabs,.forehead-instruction,.forehead-status{display:none}
+@media(max-width:700px){
+ .forehead-scoreline{top:60px;left:10px;right:10px;gap:7px;grid-template-columns:70px minmax(0,1fr) 70px}
+ .forehead-scoreline .forehead-score{min-height:39px;gap:5px}
+ .forehead-scoreline .forehead-score b{font-size:20px}
+ .forehead-round{padding:7px 9px;min-width:109px}
+ .forehead-round strong{font-size:12px}
+ .forehead-stage .henyo-dual-clocks{top:81px}
+ .forehead-bottom{padding:8px 12px max(10px,env(safe-area-inset-bottom));gap:5px}
+ .forehead-bottom.giver-controls{padding-top:12px;padding-bottom:max(17px,env(safe-area-inset-bottom));gap:9px}
+ .forehead-answer-bar button{min-height:43px}
+ .forehead-ask-bar{min-height:32px}
+ .forehead-ask-button{min-height:32px;padding:6px 9px}
+ .forehead-form{min-height:43px}
+ .forehead-form button{flex-basis:43px}
+}
+@media(max-width:700px) and (max-height:660px){
+ .forehead-scoreline{top:52px}
+ .forehead-scoreline .forehead-score{min-height:35px}
+ .forehead-round{padding:6px 8px}
+ .forehead-stage .henyo-dual-clocks{top:69px}
+ .forehead-bottom{gap:4px;padding-top:6px;padding-bottom:max(7px,env(safe-area-inset-bottom))}
+ .forehead-bottom.giver-controls{padding-top:11px;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+ .henyo-safe-pass{min-height:27px}
+ .henyo-safe-pass .forehead-skip{min-height:27px;padding:4px 8px}
+ .forehead-ask-button{min-height:29px}
+ .forehead-form{min-height:40px}
+ .forehead-form button{flex-basis:40px}
+ .forehead-answer-bar button{min-height:40px}
+ .henyo-giver-prompt{min-height:19px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .henyo-success-overlay,.henyo-success-toast{animation:none}
+}
+
+/* Three-step progressive yes/no categories in Pinoy Henyo. */
+.henyo-hint-trail{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;min-height:27px;padding:3px 4px;margin:0}
+.henyo-hint-step{display:inline-flex;gap:5px;align-items:center;white-space:nowrap;color:#685280;font-size:11px;font-weight:850}
+.henyo-hint-step svg{color:#a592c3;flex-shrink:0}
+.henyo-hint-step b{border:1px solid #d9c6ed;background:#f5edff;padding:5px 8px;border-radius:9px;line-height:1.2}
+.henyo-category-title-stack{display:flex;flex-direction:column;gap:3px;min-width:0}
+.henyo-category-title-stack small{color:#937eae;font-size:9px;font-weight:900;letter-spacing:1.1px}
+.henyo-category-title-stack strong{color:#59416f;font-size:14px;line-height:1.2}
+.henyo-category-breadcrumb{display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:#f1e9f7;padding:7px 9px;border-radius:9px;color:#5d4d79;font-size:10px;font-weight:800}
+.henyo-category-breadcrumb span{display:inline-flex;align-items:center;gap:6px}
+.henyo-category-breadcrumb svg{color:#9c81bf}
+.forehead-category-grid button{min-width:0;overflow-wrap:anywhere}
+@media(max-width:390px){
+ .henyo-hint-trail{gap:2px;padding:2px 0}
+ .henyo-hint-step{gap:3px;font-size:10px}
+ .henyo-hint-step b{padding:4px 6px}
+ .henyo-hint-step svg{width:10px}
+}
+@media(max-width:700px) and (max-height:650px){
+ .henyo-hint-trail{min-height:23px}
+ .henyo-hint-step{font-size:9px}
+ .henyo-hint-step b{padding:3px 5px}
+ .henyo-category-title-stack small{font-size:8px}
+}
+
+/* Real 3D studio asset-loading gate. Countdown starts only when both clients
+   have rendered their first scene frame and acknowledged readiness. */
+.forehead-shell{position:relative}
+.henyo-asset-loading{
+ position:absolute;inset:0;z-index:55;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:11px;padding:26px;text-align:center;
+ background:radial-gradient(ellipse at 50% 33%,#393059 0%,#25203e 78%);
+ color:#fdfaff;
+}
+.henyo-asset-loader{position:relative;display:grid;place-items:center;width:78px;height:78px;border-radius:23px;
+ background:rgba(200,170,255,.12);color:#efe1ff;box-shadow:0 0 45px rgba(204,166,255,.12)}
+.henyo-asset-loading-ring{position:absolute;inset:-9px;border:3px solid rgba(216,201,255,.22);
+ border-top-color:#b6f2dc;border-right-color:#d2b5ff;border-radius:50%;animation:henyo-loader-spin 1.15s linear infinite}
+.henyo-asset-loading strong{font-size:20px;font-weight:900}
+.henyo-asset-loading p{max-width:275px;font-size:12px;line-height:1.45;color:#dbd2ed;margin:0}
+.henyo-loading-steps{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.henyo-loading-steps span{padding:7px 10px;border:1px solid rgba(208,195,236,.32);border-radius:999px;color:#b2a8c8;font-size:10px;font-weight:800}
+.henyo-loading-steps span.done{color:#b9fae3;border-color:rgba(134,231,199,.55);background:rgba(134,231,199,.08)}
+.henyo-loading-exit{margin-top:12px;padding:9px 16px;border-radius:11px;border:1px solid rgba(219,208,240,.42);background:rgba(255,255,255,.07);color:#f3eefa;font-size:12px;font-weight:750}
+@keyframes henyo-loader-spin{to{transform:rotate(360deg)}}
+.henyo-chat-form{display:flex;gap:7px;align-items:center;min-height:41px}
+.henyo-chat-form input{height:41px;min-width:0;flex:1;border-radius:12px;border:1px solid #cdb6e6;background:#fff;color:#4c3e66;padding:10px 12px;font:inherit;font-size:12px;outline:none}
+.henyo-chat-form input:focus-visible{box-shadow:0 0 0 2px #b397da88}
+.henyo-chat-form button{height:41px;width:42px;display:grid;place-items:center;border:0;border-radius:12px;background:#785db2;color:#fff;flex-shrink:0}
+.henyo-chat-form button:disabled{opacity:.45}
+.henyo-text-question{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 9px;background:#f4edf9;border:1px solid #ddccea;border-radius:11px;text-align:center}
+.henyo-text-question small{font-size:9px;letter-spacing:.06em;color:#866fa3;font-weight:900}
+.henyo-text-question strong{max-width:100%;overflow-wrap:anywhere;color:#4d3665;font-weight:850;font-size:12px}
+.forehead-bottom.giver-controls:has(.henyo-text-question){gap:6px;padding-top:10px}
+@media(max-width:700px) and (max-height:660px){
+ .henyo-asset-loader{width:63px;height:63px}
+ .henyo-asset-loading strong{font-size:17px}
+ .henyo-chat-form,.henyo-chat-form input,.henyo-chat-form button{height:36px;min-height:36px}
+ .henyo-text-question{padding:5px 8px}
+ .henyo-text-question strong{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.henyo-asset-loading-ring{animation:none}}
+
+/* Tablet-responsive Pinoy Henyo: more stage, never stretch control hit areas.
+   Phone rules remain the default under 700px. */
+@media(min-width:701px) and (min-height:640px){
+ .forehead-overlay{padding:clamp(9px,1.8vw,20px)}
+ .forehead-shell{
+  width:min(96vw,920px);
+  height:min(95dvh,960px);
+  max-width:920px;
+  max-height:960px;
+  border-radius:25px;
+ }
+ .forehead-header{padding:11px clamp(16px,2vw,24px)}
+ .forehead-stage{flex:1;min-height:0}
+ .forehead-bottom{padding:12px clamp(19px,3vw,36px) 17px;gap:8px}
+ .forehead-scoreline{left:clamp(18px,3vw,35px);right:clamp(18px,3vw,35px)}
+ .forehead-stage .henyo-dual-clocks{left:17px;right:17px}
+ .forehead-float-column{width:clamp(105px,18%,172px)}
+ .forehead-form,.henyo-chat-form{max-width:780px;margin-inline:auto}
+ .forehead-ask-bar,.henyo-safe-pass,.henyo-hint-trail{max-width:780px;width:100%;margin-inline:auto}
+}
+@media(min-width:900px) and (max-height:800px) and (orientation:landscape){
+ .forehead-overlay{padding:8px}
+ .forehead-shell{width:min(98vw,980px);max-width:980px;height:min(98dvh,780px)}
+ .forehead-header{min-height:49px;padding:7px 16px}
+ .forehead-bottom{gap:5px;padding-top:7px;padding-bottom:10px}
+ .forehead-stage .henyo-dual-clocks{top:75px}
+ .forehead-ask-button{min-height:33px}
+ .henyo-hint-trail{min-height:24px}
+}
+
+/* Prevent the underlying desktop chat document from scrolling while the
+   fixed Pinoy Henyo game is active (important on tablet landscape). */
+html:has(.forehead-overlay),body:has(.forehead-overlay){
+ overflow:hidden!important;
+ overscroll-behavior:none;
+}
+
+/* Voice-only Pinoy Henyo controls. No category suggestions or chat composer. */
+.henyo-spoken-instruction{display:flex;align-items:center;justify-content:center;gap:9px;min-height:47px;padding:10px 13px;border-radius:14px;background:#f1e8f9;color:#615079;font-size:12px;font-weight:750;text-align:center}
+.henyo-spoken-instruction svg{flex-shrink:0;color:#7652aa}
+.henyo-voice-correct{display:flex;flex-direction:column;align-items:center;gap:8px;margin:4px auto;width:100%;max-width:540px}
+.henyo-voice-correct p{display:flex;align-items:center;justify-content:center;gap:8px;margin:0;color:#6f5d81;font-size:12px;font-weight:750}
+.henyo-voice-correct .henyo-correct-button{display:flex;justify-content:center;align-items:center;gap:12px;width:100%;min-height:54px;border-radius:15px;background:#22a77d;border:1px solid #16865d;color:#fff;font-size:15px;font-weight:950;box-shadow:0 8px 22px #1b9d7555}
+.henyo-voice-correct .henyo-correct-button:disabled{opacity:.5}
+.henyo-voice-correct small{font-size:10px;color:#7e728b;text-align:center}
+@media(max-width:700px) and (max-height:650px){
+ .henyo-voice-correct .henyo-correct-button{min-height:46px}
+ .henyo-spoken-instruction{min-height:38px;padding:7px;font-size:11px}
+}

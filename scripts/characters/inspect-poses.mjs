@@ -1,0 +1,4 @@
+import {chromium} from 'playwright-core';
+const b=await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true,args:['--use-gl=angle','--use-angle=swiftshader']});
+try{const p=await b.newPage();await p.goto('http://127.0.0.1:5174/assets/characters/review.html',{waitUntil:'domcontentloaded'});await p.waitForFunction(()=>window.characterReview);console.log(JSON.stringify(await p.evaluate(()=>{const a=window.characterReview.actors[0],r=[];window.characterReview.setPaused(true);for(const action of ['Stand','Celebrate','RaiseArms','Rock','Paper','Scissors','Sit']){window.characterReview.sample(action,.35);r.push({action,bones:[...a.bones].filter(([n])=>/hand|upper|forearm|index01|middle01|thigh|hips|foot/i.test(n)).map(([n,b])=>[n,b.matrixWorld.elements.slice(12,15),b.quaternion.toArray()])});}return r;}),null,2));}finally{await b.close();}
+

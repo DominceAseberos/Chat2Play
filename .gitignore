@@ -1,0 +1,20 @@
+node_modules/
+dist/
+dist-character-preview/
+.env
+.env.*
+!.env.example
+.vite/
+*.log
+playwright-report/
+*.tsbuildinfo
+__pycache__/
+.pytest_cache/
+
+# Generated local screenshots and earlier experiment snapshots.
+/*.png
+backups/
+assets/characters/archive/
+assets/characters/previews/
+assets/characters/validation/
+*.blend1

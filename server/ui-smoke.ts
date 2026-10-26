@@ -1,0 +1,72 @@
+import { chromium } from "playwright-core";
+import assert from "node:assert/strict";
+const exe="C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const browser=await chromium.launch({headless:true,executablePath:exe,args:["--no-sandbox"]});
+const errors:string[]=[];
+const c1=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+const c2=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
+const a=await c1.newPage(),b=await c2.newPage();
+for(const page of [a,b])page.on("pageerror",e=>errors.push(e.message));
+function confirm(condition:boolean,description:string){assert.ok(condition,description);console.log("✓ "+description);}
+async function noOverflow(page:typeof a,label:string){
+ const n=await page.evaluate(()=>({body:document.documentElement.scrollWidth,window:document.documentElement.clientWidth}));
+ confirm(n.body<=n.window+1,label+" no horizontal overflow ("+n.body+" / "+n.window+")");
+}
+try {
+ await Promise.all([a.goto("http://localhost:5173/"),b.goto("http://localhost:5173/")]);
+ await a.locator(".online-status strong").waitFor({timeout:9000});
+ await a.getByRole("combobox",{name:"My gender"}).click();
+ const option= a.getByRole("option",{name:"Woman",exact:true});
+ await option.waitFor();
+ await option.click();
+ confirm(await a.getByRole("combobox",{name:"My gender"}).innerText()==="Woman","Custom gender select works");
+ await a.getByRole("button",{name:"Open settings"}).click();
+ await a.getByRole("button",{name:/Dark/}).click();
+ confirm((await a.locator("html").getAttribute("data-theme"))==="dark","Dark-mode setting applies");
+ await a.getByRole("button",{name:"Close"}).click();
+ await a.screenshot({path:"mobile-home-dark.png",fullPage:false});
+ await noOverflow(a,"Mobile home dark");
+ await a.locator(".consent input").check();
+ await b.locator(".consent input").check();
+ await Promise.all([a.getByRole("button",{name:/Find a stranger/}).click(),b.getByRole("button",{name:/Find a stranger/}).click()]);
+ await Promise.all([a.locator(".partner-name-button").waitFor({timeout:9000}),b.locator(".partner-name-button").waitFor({timeout:9000})]);
+ confirm(true,"Two phones matched over Socket.IO");
+ await a.getByRole("button",{name:"View partner details"}).click();
+ confirm(await a.getByRole("dialog").isVisible(),"Partner details modal");
+ await a.getByRole("button",{name:"Close"}).click();
+ await a.getByRole("textbox",{name:"Message"}).fill("Testing long words Chat2Play ".repeat(8));
+ await b.getByText("typing",{exact:true}).waitFor({timeout:7000});
+ confirm(true,"Typing indicator received by other phone");
+ await a.getByRole("button",{name:"Send message",exact:true}).click();
+ await b.getByText(/Testing long words Chat2Play/).waitFor({timeout:7000});
+ await a.waitForFunction(()=>document.querySelectorAll(".message-line.mine").length===1 && document.querySelector(".message-line.mine .spinner")===null,{timeout:5000});
+ confirm(true,"Message delivered exactly once with confirmed-send status");
+ await a.waitForTimeout(800); // Demo server throttles new chat messages to one per 700ms.
+ await a.getByRole("button",{name:"Choose emoji, GIF or sticker"}).click();
+ await a.getByRole("tab",{name:"Stickers"}).click();
+ await a.getByRole("button",{name:"Send heart sticker"}).click();
+ await b.locator(".sticker-art").first().waitFor({timeout:7000});
+ confirm(true,"Vector sticker transmitted");
+ await a.waitForTimeout(800);
+ await a.getByRole("button",{name:"Choose emoji, GIF or sticker"}).click();
+ await a.getByRole("tab",{name:"GIF"}).click();
+ await a.getByRole("textbox",{name:"GIPHY GIF link"}).fill("https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif");
+ await a.getByRole("button",{name:"Send GIF"}).click();
+ await b.locator(".gif-message").first().waitFor({timeout:7000});
+ confirm(true,"GIPHY link delivered as a GIF");
+ await a.getByRole("button",{name:"Open mini games"}).click();
+ await a.locator(".game-sidebar-open").waitFor();
+ await a.getByRole("button",{name:/Tic-Tac-Toe/}).first().click();
+ await b.locator(".inline-game").getByText("Game invitation").waitFor({timeout:7000});
+ await b.locator(".inline-game").getByRole("button",{name:/Let's play/}).click();
+ await a.locator(".inline-game .grid-game").waitFor({timeout:7000});
+ confirm(true,"Game proposal and mobile game panel");
+ await noOverflow(a,"Mobile chat");
+ await a.screenshot({path:"mobile-chat-dark.png",fullPage:false});
+ await a.getByRole("button",{name:"Next"}).click();
+ await a.getByRole("button",{name:/Find someone new/}).click();
+ await a.getByText("next game buddy").waitFor({timeout:7000});
+ confirm(true,"Next-stranger confirmation works");
+ confirm(!errors.length,"No uncaught browser JavaScript errors");
+ console.log("ALL UI TESTS PASSED");
+}finally{await browser.close();}

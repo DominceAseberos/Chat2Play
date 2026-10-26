@@ -1,0 +1,278 @@
+/*
+ * Accessible light-mode refinement.
+ * The noir-glass theme supplies intentionally pale ink for dark surfaces;
+ * these overrides replace that ink when it is placed on light cards.
+ * Scoped to the light theme so dark mode remains unchanged.
+ */
+:root[data-theme="light"] {
+  --text:#282235;
+  --muted:#5c5368;
+  --subtle:#6b6074;
+  --accent:#624399;
+  --accent-strong:#503180;
+  --border:rgba(69,51,85,.23);
+  --focus:#624399;
+  --green:#187a58;
+}
+
+:root[data-theme="light"] .c2p-app {
+  color:var(--text);
+}
+
+/* Site-wide text and microcopy */
+:root[data-theme="light"] .c2p-app .overline,
+:root[data-theme="light"] .c2p-app .form-kicker,
+:root[data-theme="light"] .c2p-app .sidebar-kicker,
+:root[data-theme="light"] .c2p-app .conversation-overline {
+  color:#65457b;
+}
+:root[data-theme="light"] .c2p-app .hero h1 em,
+:root[data-theme="light"] .c2p-app .search-inner h2 em {
+  color:#67457d;
+}
+:root[data-theme="light"] .c2p-app .search-inner > p,
+:root[data-theme="light"] .c2p-app .form-card-title p,
+:root[data-theme="light"] .c2p-app .form-label span,
+:root[data-theme="light"] .c2p-app .field-note,
+:root[data-theme="light"] .c2p-app .hero > p,
+:root[data-theme="light"] .c2p-app .under-button,
+:root[data-theme="light"] .c2p-app .footer,
+:root[data-theme="light"] .c2p-app .quick-step div span,
+:root[data-theme="light"] .c2p-app .consent,
+:root[data-theme="light"] .c2p-app .sidebar-top p {
+  color:var(--muted);
+}
+:root[data-theme="light"] .c2p-app .online-status,
+:root[data-theme="light"] .c2p-app .partner-name-button small,
+:root[data-theme="light"] .c2p-app .message-meta {
+  color:var(--muted);
+}
+
+/* Hero illustration: dark-theme glass formerly hid pale lettering */
+:root[data-theme="light"] .c2p-app .illustration-board {
+  background:linear-gradient(145deg,rgba(255,255,255,.86),rgba(231,225,238,.94));
+  border-color:rgba(109,86,131,.3);
+  box-shadow:0 15px 36px rgba(89,66,108,.15);
+}
+:root[data-theme="light"] .c2p-app .illustration-board > span {
+  background:#e9e1ef;
+  color:#60447a;
+}
+:root[data-theme="light"] .c2p-app .illustration-board > span:nth-child(2n) {
+  background:#f3e4ea;
+  color:#96526c;
+}
+:root[data-theme="light"] .c2p-app .illustration-message {
+  background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(240,234,246,.97));
+  color:#30283e;
+  border-color:rgba(106,83,127,.22);
+  box-shadow:0 8px 23px rgba(67,48,83,.12);
+}
+:root[data-theme="light"] .c2p-app .floating-right {
+  background:linear-gradient(145deg,#fbf3fc,#dfd4e9);
+}
+:root[data-theme="light"] .c2p-app .hero-tags svg {
+  color:#805c95;
+}
+
+/* Form affordances and selected game cards */
+:root[data-theme="light"] .c2p-app .fancy-trigger {
+  background:#fff;
+  border-color:rgba(84,66,104,.3);
+  color:var(--text);
+}
+:root[data-theme="light"] .c2p-app .fancy-trigger-icon,
+:root[data-theme="light"] .c2p-app .form-card-icon,
+:root[data-theme="light"] .c2p-app .step-symbol {
+  color:var(--accent);
+}
+:root[data-theme="light"] .c2p-app .game-choice {
+  background:linear-gradient(140deg,#fff,#f2eef5);
+  border-color:rgba(84,66,104,.25);
+  color:var(--text);
+  box-shadow:inset 0 1px #fff;
+}
+:root[data-theme="light"] .c2p-app .game-choice:is(:hover,.chosen) {
+  background:linear-gradient(145deg,#f0e8fa,#f7edf5);
+  border-color:#8a6ab1;
+}
+:root[data-theme="light"] .c2p-app .game-choice-symbol,
+:root[data-theme="light"] .c2p-app .game-choice-symbol.memory,
+:root[data-theme="light"] .c2p-app .game-choice-symbol.pong {
+  color:#60427d;
+  background:linear-gradient(145deg,#f1e8fc,#e7d9ee);
+  border-color:rgba(108,75,138,.24);
+}
+:root[data-theme="light"] .c2p-app .game-choice-symbol.rps {
+  color:#98576f;
+  background:#f7e4eb;
+}
+:root[data-theme="light"] .c2p-app .choice-checkbox {
+  border-color:#89779e;
+}
+:root[data-theme="light"] .c2p-app .chosen .choice-checkbox {
+  background:#624399;
+  color:#fff;
+  border-color:#624399;
+}
+:root[data-theme="light"] .c2p-app .consent input {
+  accent-color:#624399;
+}
+:root[data-theme="light"] .c2p-app .primary-button {
+  background:linear-gradient(145deg,#4b385e,#69517a);
+  color:#fff;
+  border-color:#6d5c7b;
+}
+:root[data-theme="light"] .c2p-app .primary-button:hover:not(:disabled) {
+  background:linear-gradient(145deg,#57426c,#785c88);
+}
+:root[data-theme="light"] .c2p-app .secondary-button,
+:root[data-theme="light"] .c2p-app .outline-button {
+  color:var(--text);
+  background:rgba(255,255,255,.62);
+  border-color:rgba(84,66,104,.27);
+}
+:root[data-theme="light"] .c2p-app .secondary-button:hover,
+:root[data-theme="light"] .c2p-app .outline-button:hover {
+  border-color:#8866a2;
+  background:#f0eaf7;
+}
+
+/* Matchmaking state */
+:root[data-theme="light"] .c2p-app .waiting-pill {
+  background:rgba(255,255,255,.66);
+  color:#342a43;
+  border-color:rgba(84,66,104,.26);
+}
+:root[data-theme="light"] .c2p-app .search-chat-skeleton {
+  border-color:rgba(92,69,111,.22);
+  background:rgba(255,255,255,.47);
+}
+/* Skeleton remains intentionally low emphasis but not the actual status text */
+
+/* Chat — header, content, badges and composer */
+:root[data-theme="light"] .c2p-app .chat-header {
+  background:rgba(247,245,250,.94);
+  border-color:var(--border);
+}
+:root[data-theme="light"] .c2p-app .conversation-start-icon {
+  background:linear-gradient(145deg,#f2eafb,#dbd2e8);
+  border-color:rgba(99,74,129,.26);
+  color:#64468a;
+  box-shadow:0 10px 25px rgba(68,52,89,.15);
+}
+:root[data-theme="light"] .c2p-app .conversation-start > span:last-child {
+  color:#554861;
+  background:rgba(255,255,255,.68);
+  border-color:rgba(84,66,104,.22);
+}
+:root[data-theme="light"] .c2p-app .message-meta svg,
+:root[data-theme="light"] .c2p-app .open-games-button {
+  color:#695378;
+}
+:root[data-theme="light"] .c2p-app .next-button {
+  color:#392b46;
+  background:linear-gradient(145deg,#f6effa,#e6dbe9);
+  border-color:rgba(91,68,111,.3);
+  box-shadow:0 4px 12px rgba(69,49,89,.12);
+}
+:root[data-theme="light"] .c2p-app .next-button:hover {
+  background:#e9daef;
+}
+:root[data-theme="light"] .c2p-app .like-notice {
+  color:#94435f;
+  background:#f8e4eb;
+  border-color:rgba(150,67,95,.25);
+}
+:root[data-theme="light"] .c2p-app .sidebar-love button {
+  background:#f4dce7;
+  color:#873b5a;
+}
+:root[data-theme="light"] .c2p-app .composer-action {
+  background:#ece4f3;
+  color:#5b4178;
+  border-color:rgba(85,62,112,.23);
+}
+:root[data-theme="light"] .c2p-app .composer-footer > span {
+  color:var(--muted);
+}
+:root[data-theme="light"] .c2p-app .chat-dock {
+  border-color:var(--border);
+}
+:root[data-theme="light"] .c2p-app .chat-dock button {
+  color:#5c5266;
+}
+:root[data-theme="light"] .c2p-app .chat-dock button.dock-selected {
+  color:#503471;
+}
+:root[data-theme="light"] .c2p-app .chat-dock button.dock-selected svg {
+  background:#e9deef;
+  border-color:rgba(88,67,106,.24);
+  filter:none;
+}
+@media(max-width:700px) {
+  :root[data-theme="light"] .c2p-app .game-sidebar {
+    background:linear-gradient(165deg,#fff,#f1eef7);
+    border-color:var(--border);
+    box-shadow:0 -18px 65px rgba(52,35,69,.19);
+  }
+}
+
+/* Sidebar, games and modal controls */
+:root[data-theme="light"] .c2p-app .sidebar-game {
+  background:linear-gradient(145deg,#fff,#f2edf5);
+  border-color:rgba(84,66,104,.23);
+  color:var(--text);
+}
+:root[data-theme="light"] .c2p-app .sidebar-top h3 svg {
+  color:#78558d;
+}
+:root[data-theme="light"] .c2p-app .game-symbol,
+:root[data-theme="light"] .c2p-app .invite-visual,
+:root[data-theme="light"] .c2p-app .setting-icon {
+  background:#eee5f5;
+  color:#65457b;
+  border-color:rgba(91,70,109,.22);
+}
+:root[data-theme="light"] .c2p-app .score-player strong,
+:root[data-theme="light"] .c2p-app .pong-score strong {
+  color:#5f417c;
+}
+:root[data-theme="light"] .c2p-app .modal-body {
+  background:#fdfbff;
+  color:var(--text);
+  border-color:rgba(88,66,111,.22);
+}
+:root[data-theme="light"] .c2p-app .theme-toggle button {
+  color:var(--text);
+  background:#f4f0f8;
+  border-color:rgba(92,68,112,.2);
+}
+:root[data-theme="light"] .c2p-app .theme-toggle button.selected {
+  color:#4a316a;
+  background:#e8dcef;
+  border-color:#997bb1;
+}
+:root[data-theme="light"] .c2p-app .report-options button {
+  background:#f4edf7;
+  border-color:var(--border);
+  color:var(--text);
+}
+:root[data-theme="light"] .c2p-app .reaction-tabs button.active {
+  background:#e6d8f0;
+  color:#5c3f7b;
+}
+:root[data-theme="light"] .c2p-app .sticker-grid button {
+  background:#f5f0f8;
+  border-color:var(--border);
+}
+:root[data-theme="light"] .c2p-app .memory-tip {
+  color:#624399;
+}
+:root[data-theme="light"] .c2p-app .select-option[data-highlighted]{
+  color:#3d2b53;
+  background:#ece1f5;
+}
+:root[data-theme="light"] .c2p-app :where(button,input,textarea,[role="button"]):focus-visible {
+  outline-color:var(--focus);
+}

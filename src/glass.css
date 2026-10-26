@@ -1,0 +1,504 @@
+/* CHAT2PLAY / NOIR GLASS — dark editorial messenger visual system
+   Inspired by the user's 3-phone reference. Original CSS, no borrowed imagery.
+   Functional anonymity is preserved: there is no fake user directory or profile photo. */
+:root[data-theme="dark"]{
+  --page:#090b10;--surface:#15171d;--surface-alt:#1d2028;--raised:#292d36;
+  --text:#f6f5fa;--muted:#a4a7b4;--subtle:#777b8b;
+  --border:rgba(238,241,255,.13);--accent:#cfbdff;--accent-strong:#bda5ff;
+  --accent-light:rgba(213,202,255,.10);--lavender:rgba(149,143,189,.30);
+  --peach:rgba(255,163,188,.19);--green:#79dcb0;
+  --chat-theirs:rgba(222,225,241,.095);
+  --shadow:0 24px 80px rgba(0,0,0,.42);--like:#ff9bb6;
+  --overlay:rgba(5,6,12,.78);--focus:#bca7ed;
+}
+:root[data-theme="light"]{
+  --page:#eeeef2;--surface:#f9f9fb;--surface-alt:#f1f0f5;--raised:#fff;
+  --text:#252333;--muted:#78788a;--subtle:#aaa8b2;
+  --border:rgba(38,37,54,.14);--accent:#735ac5;--accent-strong:#674abd;
+  --accent-light:rgba(112,87,188,.11);--lavender:rgba(136,106,197,.2);
+  --peach:rgba(223,133,164,.16);--green:#24ac76;--shadow:0 23px 80px rgba(26,20,59,.13);
+  --chat-theirs:rgba(38,38,62,.075);--like:#d3688a;
+}
+:root{font-family:"DM Sans",sans-serif}
+body{background:var(--page)}
+button{-webkit-tap-highlight-color:transparent}
+.c2p-app{
+ position:relative;isolation:isolate;overflow:hidden;
+ background:
+ radial-gradient(ellipse 590px 380px at 92% 80%,rgba(189,93,124,.13),transparent 75%),
+ radial-gradient(ellipse 630px 520px at 7% 10%,rgba(100,103,137,.12),transparent 72%),
+ linear-gradient(157deg,#080a0f 0%,#0a0e13 47%,#100e16 100%);
+}
+:root[data-theme="light"] .c2p-app{
+ background:radial-gradient(ellipse at 90% 83%,rgba(214,149,168,.18),transparent 50%),
+ radial-gradient(ellipse at 8% 16%,rgba(159,147,191,.23),transparent 56%),
+ linear-gradient(150deg,#f5f4f6,#e7e5eb);
+}
+.c2p-app:before{content:"";z-index:-1;position:absolute;inset:0;pointer-events:none;background:
+radial-gradient(ellipse 300px 155px at 28% 68%,rgba(252,188,214,.075),transparent 75%),
+radial-gradient(ellipse 420px 100px at 80% 62%,rgba(235,240,255,.07),transparent 70%);}
+:root[data-theme="light"] .c2p-app:before{opacity:.65}
+.c2p-app .topbar{
+ height:78px;padding:0 max(32px,calc((100% - 1190px)/2));z-index:20;
+ border-bottom:1px solid rgba(255,255,255,.09);
+ background:linear-gradient(180deg,rgba(27,29,35,.64),rgba(14,16,22,.52));
+ backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+}
+:root[data-theme="light"] .topbar{background:rgba(255,255,255,.48);border-color:var(--border)}
+.c2p-app .logo-text{font-family:"Outfit",sans-serif;font-size:26px;font-weight:600;letter-spacing:-1.55px}
+.c2p-app .logo-text span{color:#d9bcff}
+:root[data-theme="light"] .logo-text span{color:#7b61c9}
+.c2p-app .logo-mark{
+ transform:none;width:39px;height:39px;border-radius:13px;
+ background:linear-gradient(145deg,rgba(244,247,255,.46),rgba(130,129,149,.10) 48%,rgba(0,0,0,.35));
+ border:1px solid rgba(255,255,255,.34);
+ color:#f7f3ff;box-shadow:inset 0 1px 1px #ffffff70,0 8px 24px #0005,0 0 20px #edd7ff17;
+}
+:root[data-theme="light"] .logo-mark{background:linear-gradient(140deg,#e4ddfb,#aaa1c7);color:#3d335e;border-color:#fff}
+.c2p-app .logo-triangle{border-left-color:#f3d6dd}
+.c2p-app .topbar-right{gap:17px}
+.c2p-app .online-status{font-size:11px;letter-spacing:.1px}
+.c2p-app .online-status strong{font-weight:700}
+.c2p-app .live-indicator{width:7px;height:7px;box-shadow:0 0 0 4px rgba(86,230,161,.08),0 0 14px #56dba673}
+.c2p-app .icon-button,.c2p-app .svg-button{
+ border:1px solid rgba(255,255,255,.10);
+ background:linear-gradient(145deg,rgba(244,246,255,.12),rgba(255,255,255,.015) 58%,rgba(0,0,0,.15));
+ color:var(--text);border-radius:50%;
+ box-shadow:inset 0 1px 1px rgba(255,255,255,.16),0 5px 15px rgba(0,0,0,.15);
+}
+:root[data-theme="light"] .icon-button,:root[data-theme="light"] .svg-button{border-color:var(--border);background:rgba(255,255,255,.72)}
+.c2p-app .icon-button:hover,.c2p-app .svg-button:hover{background:rgba(230,225,245,.2);color:var(--text)}
+.c2p-app .settings-trigger{width:40px;height:40px}
+.c2p-app .primary-button{
+ background:linear-gradient(145deg,#f9f8fc 0%,#d4d0dc 43%,#99929d 100%);
+ color:#24202b;border:1px solid rgba(255,255,255,.61);border-radius:30px;
+ box-shadow:inset 0 2px 2px rgba(255,255,255,.8),inset 0 -3px 7px rgba(30,22,42,.16),0 9px 25px #0004;
+ font-weight:800;letter-spacing:.05px;
+}
+.c2p-app .primary-button:hover:not(:disabled){background:linear-gradient(140deg,#fff,#e8e2f1 50%,#aaa2b5)}
+:root[data-theme="light"] .primary-button{background:linear-gradient(140deg,#3b334f,#685d75);color:#fff;border-color:#aaa0b0}
+.c2p-app .secondary-button,.c2p-app .outline-button{
+ border:1px solid var(--border);border-radius:999px;color:var(--text);
+ background:linear-gradient(145deg,rgba(236,238,251,.13),rgba(238,240,255,.035));
+ box-shadow:inset 0 1px 1px rgba(255,255,255,.09)
+}
+.c2p-app .outline-button:hover,.c2p-app .secondary-button:hover{border-color:rgba(255,255,255,.34)}
+.c2p-app .home-container{max-width:1190px;padding-top:55px}
+.c2p-app .home-layout{gap:7%;grid-template-columns:minmax(0,1fr) minmax(420px,455px);align-items:center}
+.c2p-app .hero{padding-top:12px}
+.c2p-app .overline{font-size:10px;color:#d2c8db;letter-spacing:2px}
+.c2p-app .overline-dot{background:#dfa8bb;box-shadow:0 0 0 4px #dfb6c51c,0 0 20px #e9acc2}
+.c2p-app .hero h1{
+ font-size:clamp(52px,5.2vw,77px);font-family:"Outfit",sans-serif;font-weight:550;
+ letter-spacing:-3.7px;line-height:1.09;margin:31px 0 20px;
+}
+.c2p-app .hero h1 em{color:#e4d6ec;font-weight:460}
+:root[data-theme="light"] .hero h1 em{color:#8866a2}
+.c2p-app .hero>p{font-size:14px;line-height:1.85;max-width:450px;color:var(--muted)}
+.c2p-app .hero-tags{gap:11px;margin-top:28px}
+.c2p-app .hero-tags span{background:linear-gradient(135deg,rgba(255,255,255,.11),rgba(255,255,255,.035));border:1px solid var(--border);padding:10px 13px;border-radius:40px;font-size:10px;font-weight:600;color:var(--text)}
+.c2p-app .hero-tags svg{color:#e3c9da}
+.c2p-app .illustration{height:250px;overflow:visible;margin-top:20px}
+.c2p-app .illustration-gradient{
+ height:227px;width:320px;left:20%;top:0;
+ background:radial-gradient(ellipse at 50% 78%,rgba(232,192,207,.39),rgba(130,106,143,.22) 35%,transparent 69%);
+ filter:blur(8px);
+}
+.c2p-app .illustration-board{
+ left:36%;top:34px;transform:rotate(-9deg);border-radius:26px;width:165px;height:168px;
+ background:linear-gradient(148deg,rgba(242,242,255,.20),rgba(56,58,72,.16) 53%,rgba(255,255,255,.045));
+ border:1px solid rgba(255,255,255,.34);box-shadow:inset 0 2px 0 rgba(255,255,255,.2),0 23px 40px #0006;
+ backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.c2p-app .illustration-board>span{background:rgba(230,218,248,.13);color:#ece0ff}
+.c2p-app .illustration-board>span:nth-child(2n){background:rgba(255,202,208,.14);color:#ffcae0}
+.c2p-app .illustration-message{
+ background:linear-gradient(165deg,rgba(225,230,240,.24),rgba(64,67,74,.12) 55%,rgba(247,251,255,.05));
+ border:1px solid rgba(255,255,255,.28);backdrop-filter:blur(20px);
+ border-radius:22px;color:#f5f2f9;box-shadow:inset 0 1px rgba(255,255,255,.2),0 16px 25px #0006;
+ font-weight:550;font-size:12px;padding:9px 15px;
+}
+.c2p-app .floating-left{left:2%;top:104px}
+.c2p-app .floating-right{right:-2%;top:45px;background:linear-gradient(145deg,rgba(230,223,238,.32),rgba(113,107,121,.23))}
+.c2p-app .bubble-avatar,.c2p-app .bubble-game{background:linear-gradient(135deg,#a09aa6,#35333f);color:#fff;border-radius:50%}
+.c2p-app .illustration-decor{color:#f5c6d6;filter:drop-shadow(0 0 18px #f5c6d6)}
+.c2p-app .form-card{
+ background:linear-gradient(140deg,rgba(244,246,255,.13) 0%,rgba(255,255,255,.065) 24%,rgba(34,35,44,.45) 95%);
+ border:1px solid rgba(247,249,255,.19);border-radius:29px;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 25px 80px rgba(0,0,0,.46),0 0 50px rgba(210,153,179,.04);
+ backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+ padding:30px 31px;
+}
+:root[data-theme="light"] .form-card{background:linear-gradient(160deg,rgba(255,255,255,.95),rgba(244,240,246,.84));border-color:#fff}
+.c2p-app .form-card-icon,.c2p-app .step-symbol{
+ background:linear-gradient(148deg,rgba(245,245,255,.23),rgba(255,255,255,.045));
+ border:1px solid var(--border);color:#f2e7fa;
+ box-shadow:inset 0 1px rgba(255,255,255,.19)
+}
+:root[data-theme="light"] .form-card-icon,:root[data-theme="light"] .step-symbol{color:var(--accent);background:#ede8f0}
+.c2p-app .form-kicker,.c2p-app .sidebar-kicker{font-weight:700;letter-spacing:2px;color:#d6bacd}
+.c2p-app .form-card-title h2{font-size:26px;font-weight:650;letter-spacing:-.6px}
+.c2p-app .form-card-title p{font-size:11px;color:var(--muted)}
+.c2p-app .form-line{background:linear-gradient(90deg,transparent,var(--border),transparent);margin:23px 0}
+.c2p-app .form-label label{font-size:12px;font-weight:650;color:var(--text)}
+.c2p-app .form-label span,.c2p-app .field-note{font-size:10px;color:var(--muted)}
+.c2p-app .fancy-trigger{
+ height:52px;border-radius:17px;color:var(--text);
+ background:linear-gradient(140deg,rgba(242,244,253,.11),rgba(255,255,255,.04));
+ border:1px solid rgba(255,255,255,.16);box-shadow:inset 0 1px 0 rgba(255,255,255,.09);
+ font-weight:600;font-size:12px;
+}
+.c2p-app .fancy-trigger-icon{color:#ded0f0}
+:root[data-theme="light"] .fancy-trigger{border-color:var(--border);background:#faf9fc}
+:root[data-theme="light"] .fancy-trigger-icon{color:var(--accent)}
+.c2p-app .game-choices{gap:11px}
+.c2p-app .game-choice{
+ min-height:105px;color:var(--text);
+ background:linear-gradient(150deg,rgba(235,239,250,.13),rgba(112,110,126,.07));
+ border:1px solid rgba(255,255,255,.15);border-radius:18px;
+ box-shadow:inset 0 1px rgba(255,255,255,.13);padding:12px;
+ font-size:11px;font-weight:650;
+}
+.c2p-app .game-choice:hover,.c2p-app .game-choice.chosen{border-color:rgba(244,229,255,.56);background:linear-gradient(140deg,rgba(242,234,255,.22),rgba(221,192,218,.08))}
+.c2p-app .game-choice-symbol{border:1px solid rgba(255,255,255,.13);background:linear-gradient(140deg,rgba(232,233,255,.28),rgba(107,104,120,.15));color:#f5e5ff;border-radius:12px}
+.c2p-app .game-choice-symbol.memory,.c2p-app .game-choice-symbol.pong{color:#f3e6ff;background:linear-gradient(145deg,rgba(240,215,229,.19),rgba(187,180,240,.18))}
+.c2p-app .choice-checkbox{border-color:rgba(255,255,255,.35);border-radius:50%}
+.c2p-app .chosen .choice-checkbox{background:#e6d5ee;color:#3b2b44;border-color:#e6d5ee}
+.c2p-app .consent{font-size:11px;color:var(--muted);margin-top:19px}
+.c2p-app .consent b{font-weight:700}
+.c2p-app .consent input{accent-color:#d8bede}
+.c2p-app .match-button{min-height:54px;border-radius:19px}
+.c2p-app .under-button{color:var(--muted);margin-top:17px}
+.c2p-app .quick-steps{border-top:1px solid var(--border);margin-top:42px}
+.c2p-app .quick-step{gap:13px}
+.c2p-app .quick-step strong{font-weight:650}
+.c2p-app .quick-step div span{color:var(--muted)}
+.c2p-app .footer{color:var(--muted)}
+.c2p-app .select-content,.select-content{
+ background:linear-gradient(160deg,#292b34,#16171f);color:#f6f5fa;
+ border:1px solid rgba(255,255,255,.25);border-radius:18px;box-shadow:0 24px 48px #0009;
+ backdrop-filter:blur(26px)
+}
+:root[data-theme="light"] .select-content{background:#fff;color:#2d293a}
+.select-option{color:inherit!important;border-radius:13px}
+.select-option[data-highlighted]{background:rgba(241,236,255,.18);color:inherit!important}
+:root[data-theme="light"] .select-option[data-highlighted]{background:#eee9f7}
+.c2p-app .search-container{padding:22px}
+.c2p-app .search-inner h2{font-weight:600}
+.c2p-app .search-inner h2 em{color:#e5d4ee}
+.c2p-app .radar-circle{border-color:rgba(238,233,249,.22)}
+.c2p-app .radar-circle.three{background:radial-gradient(circle,rgba(228,210,240,.18),rgba(225,225,240,.04));}
+.c2p-app .radar-core{background:linear-gradient(145deg,#f5f0fb,#76717e);color:#292633;box-shadow:inset 0 2px #fff,0 0 45px #ebc9e24e}
+.c2p-app .waiting-pill,.c2p-app .search-chat-skeleton{background:linear-gradient(145deg,rgba(235,238,250,.15),rgba(235,236,243,.025));border-color:var(--border);backdrop-filter:blur(16px)}
+.c2p-app .waiting-pill{color:var(--text)}
+.c2p-app .chat-layout{width:min(1190px,calc(100% - 46px));margin:22px auto 20px}
+.c2p-app .chat-card{
+ height:min(835px,calc(100dvh - 155px));min-height:480px;border-radius:28px;
+ background:linear-gradient(150deg,rgba(23,27,33,.94),rgba(10,13,18,.93));
+ border:1px solid rgba(247,249,255,.15);
+ box-shadow:inset 0 1px rgba(255,255,255,.15),0 22px 80px #0009;
+}
+:root[data-theme="light"] .chat-card{background:rgba(248,248,251,.94);border-color:var(--border);box-shadow:var(--shadow)}
+.c2p-app .chat-header{
+ background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.012));
+ border-color:rgba(255,255,255,.10);min-height:88px;padding:12px 20px;
+ backdrop-filter:blur(20px);
+}
+.c2p-app .partner-avatar,.c2p-app .profile-big-avatar{
+ width:47px;height:47px;border-radius:50%;
+ background:radial-gradient(circle at 30% 25%,#aab9bc 0,#5b6c76 38%,#242a35 83%);
+ border:1px solid rgba(255,255,255,.28);color:#e3e6eb;
+ box-shadow:inset 0 1px rgba(255,255,255,.36),0 5px 15px #0006;
+}
+.c2p-app .partner-avatar svg{filter:drop-shadow(0 2px 5px #0005)}
+.c2p-app .partner-name-button strong{font-family:"DM Sans";font-size:14px;font-weight:650;letter-spacing:0}
+.c2p-app .partner-name-button small{font-weight:500}
+.c2p-app .avatar-dot,.c2p-app .tiny-dot{box-shadow:0 0 0 3px rgba(80,206,146,.10),0 0 10px #45dc9c80}
+.c2p-app .heart-button.liked{color:#ffc1cf;background:rgba(255,165,190,.14)}
+.c2p-app .next-button{
+ padding:12px 16px;border-radius:20px;background:linear-gradient(150deg,rgba(236,236,247,.24),rgba(255,255,255,.05));
+ border:1px solid rgba(255,255,255,.22);color:var(--text);font-size:11px;
+ box-shadow:inset 0 1px rgba(255,255,255,.25),0 7px 20px #0003
+}
+.c2p-app .next-button:hover{background:rgba(255,255,255,.2)}
+.c2p-app .chat-body{grid-template-columns:minmax(0,1fr) 325px}
+.c2p-app .conversation{
+ position:relative;
+ background:
+ radial-gradient(ellipse 220px 90px at 34% 60%,rgba(244,233,241,.10),transparent 85%),
+ radial-gradient(ellipse 390px 220px at 60% 98%,rgba(201,97,130,.20),transparent 86%),
+ linear-gradient(155deg,rgba(4,12,18,.90),rgba(8,13,18,.96) 43%,rgba(26,18,31,.94));
+}
+:root[data-theme="light"] .conversation{background:radial-gradient(ellipse at 50% 90%,#eedce2a8,transparent 75%),linear-gradient(150deg,#e9edf2,#f5f1f5)}
+.c2p-app .conversation-scroll{padding:22px 30px 12px}
+.c2p-app .conversation-start{margin:15px auto 38px}
+.c2p-app .conversation-start-icon{
+ width:67px;height:67px;border:1px solid rgba(255,255,255,.29);border-radius:50%;
+ background:linear-gradient(145deg,rgba(237,239,249,.38),rgba(80,85,95,.14));
+ color:#f9f0ff;box-shadow:inset 0 1px #ffffff47,0 10px 30px #0005,0 0 35px #fad7e11c;
+}
+.c2p-app .conversation-overline{display:block;font-size:9px;font-weight:700;letter-spacing:2px;color:#e7ccdc;margin:12px 0 7px}
+.c2p-app .conversation-start h3{font-weight:600;font-size:23px;letter-spacing:-.6px}
+.c2p-app .conversation-start p{font-size:12px;line-height:1.7;color:var(--muted)}
+.c2p-app .conversation-start>span:last-child{
+ display:inline-flex;align-items:center;gap:6px;padding:9px 13px;border:1px solid rgba(255,255,255,.10);
+ background:rgba(221,229,242,.07);border-radius:30px;
+ color:rgba(236,234,243,.66);font-size:10px;
+}
+:root[data-theme="light"] .conversation-start>span:last-child{color:#74677e}
+.c2p-app .message-line{margin:16px 0;gap:9px;align-items:flex-end}
+.c2p-app .message-avatar,.c2p-app .typing-mini-avatar{
+ width:30px;height:30px;background:radial-gradient(circle at 30% 20%,#b4c4c5,#6a7c7b 45%,#252c35);
+ border:1px solid rgba(255,255,255,.28);color:#eaf0f1;box-shadow:0 4px 9px #0005;
+}
+.c2p-app .message-bubble{
+ padding:13px 17px;line-height:1.6;font-size:12px;font-weight:430;letter-spacing:.01px;
+ border-radius:23px 23px 23px 7px;
+ background:linear-gradient(155deg,rgba(230,233,246,.19),rgba(200,207,224,.055) 65%,rgba(255,255,255,.1));
+ border:1px solid rgba(241,245,255,.14);
+ color:#f5f4f7;box-shadow:inset 0 1px rgba(255,255,255,.18),0 8px 19px #0004;
+ backdrop-filter:blur(17px);-webkit-backdrop-filter:blur(17px);
+}
+.c2p-app .mine .message-bubble{
+ border-radius:23px 23px 7px 23px;
+ background:linear-gradient(145deg,rgba(230,231,241,.23),rgba(207,196,215,.14) 66%,rgba(240,218,233,.12));
+ border-color:rgba(255,255,255,.22);
+ color:#fff;
+}
+:root[data-theme="light"] .message-bubble{background:#e5e2ec;color:#2d2a39;border-color:#ffffffb8;box-shadow:0 5px 13px #524d6520}
+:root[data-theme="light"] .mine .message-bubble{background:linear-gradient(135deg,#6c6188,#5e526f);color:white}
+.c2p-app .bubble-wrap{max-width:min(80%,430px)}
+.c2p-app .message-meta{font-size:9px;opacity:.75}
+.c2p-app .message-meta svg{color:#cfc8d9}
+.c2p-app .typing-pill{background:rgba(229,228,241,.12);border:1px solid var(--border);backdrop-filter:blur(15px)}
+.c2p-app .typing-pill i{background:#dcd9e2}
+.c2p-app .like-notice{background:rgba(255,180,204,.13);color:#f9c1d4;border:1px solid rgba(255,207,221,.15)}
+.c2p-app .composer-area{
+ background:linear-gradient(180deg,transparent,rgba(17,14,21,.69) 21%,rgba(25,17,26,.96));
+ padding:5px 10px 0;
+}
+:root[data-theme="light"] .composer-area{background:linear-gradient(180deg,transparent,rgba(236,224,233,.85),#e8e1e8)}
+.c2p-app .composer{
+ border-radius:32px;margin:0 7px;padding:7px;min-height:59px;
+ border:1px solid rgba(255,255,255,.23);
+ background:linear-gradient(145deg,rgba(248,239,249,.18),rgba(255,255,255,.06) 70%,rgba(255,255,255,.12));
+ box-shadow:inset 0 2px 2px #ffffff26,0 12px 28px #0005;
+ backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+}
+:root[data-theme="light"] .composer{background:#ffffffa8;border-color:#fff}
+.c2p-app .composer textarea{padding:10px 5px;color:var(--text);font-size:12px;align-self:center}
+.c2p-app .composer textarea::placeholder{color:rgba(255,255,255,.53)}
+:root[data-theme="light"] .composer textarea::placeholder{color:#797583}
+.c2p-app .composer-action{
+ height:43px;width:43px;align-self:center;border-radius:50%;
+ background:linear-gradient(145deg,rgba(255,239,247,.28),rgba(230,217,233,.12));
+ border:1px solid rgba(255,255,255,.14);color:#f9ecf4;
+}
+:root[data-theme="light"] .composer-action{background:#ece7f3;color:#5d4b70}
+.c2p-app .composer-plus{font-family:"DM Sans";font-size:28px;font-weight:300;line-height:1}
+.c2p-app .send-button{
+ height:43px;width:43px;align-self:center;border-radius:50%;color:#26222b;
+ background:linear-gradient(145deg,#fff,#ccc5d2 58%,#96909c);
+ border:1px solid rgba(255,255,255,.5);box-shadow:inset 0 2px #fff9,0 5px 12px #0003;
+}
+.c2p-app .send-button:disabled{opacity:.6}
+.c2p-app .composer-footer{padding:7px 20px 1px;justify-content:flex-end}
+.c2p-app .composer-footer>span{font-size:9px;color:rgba(255,255,255,.53)}
+:root[data-theme="light"] .composer-footer>span{color:#82798a}
+.c2p-app .open-games-button{color:#e5d5e9}
+.c2p-app .chat-dock{display:none}
+.c2p-app .game-sidebar{
+ background:linear-gradient(155deg,rgba(45,44,54,.73),rgba(20,22,29,.96));
+ border-color:var(--border);padding:24px 20px;
+}
+:root[data-theme="light"] .game-sidebar{background:rgba(246,244,249,.98)}
+.c2p-app .sidebar-kicker{color:#d1b6ca}
+.c2p-app .sidebar-top h3{font-weight:620}
+.c2p-app .sidebar-top h3 svg{color:#e3c7de}
+.c2p-app .sidebar-top p{font-size:11px}
+.c2p-app .sidebar-game{
+ background:linear-gradient(140deg,rgba(238,235,246,.15),rgba(240,239,247,.04));
+ border:1px solid rgba(255,255,255,.16);border-radius:22px;
+ padding:13px;color:var(--text);box-shadow:inset 0 1px #ffffff16,0 8px 15px #0002;
+}
+.c2p-app .sidebar-game:hover{border-color:#ddd0de}
+.c2p-app .sidebar-game-icon{background:linear-gradient(135deg,#9c9ba5,#4f4d5a);color:#fff;border:1px solid #ffffff20;border-radius:50%}
+.c2p-app .sidebar-game-icon.memory,.c2p-app .sidebar-game-icon.pong{background:linear-gradient(135deg,#b6a3bc,#51485f);color:#fff}
+.c2p-app .sidebar-game strong{font-weight:650}
+.c2p-app .sidebar-info{background:rgba(242,230,248,.07);color:var(--muted);border:1px solid var(--border)}
+.c2p-app .sidebar-love{background:rgba(238,178,198,.085);border-color:rgba(255,209,225,.17);border-radius:20px}
+.c2p-app .sidebar-love button{border-radius:50%;background:rgba(255,255,255,.13);color:#ffc7d9}
+.c2p-app .play-card{
+ background:linear-gradient(155deg,rgba(237,236,246,.12),rgba(235,235,243,.04));
+ border:1px solid rgba(255,255,255,.15);border-radius:21px;
+}
+.c2p-app .game-symbol,.c2p-app .invite-visual{background:rgba(236,224,244,.18);color:#e6d2ec}
+.c2p-app .play-card .primary-button{font-size:11px}
+.c2p-app .modal-overlay{background:rgba(1,2,5,.8);backdrop-filter:blur(16px)}
+.c2p-app .modal-body{
+ border:1px solid rgba(255,255,255,.25);border-radius:28px;
+ background:linear-gradient(160deg,rgba(46,48,59,.96),rgba(21,23,30,.99));
+ box-shadow:inset 0 1px #ffffff37,0 32px 90px #000b;backdrop-filter:blur(35px);
+}
+:root[data-theme="light"] .modal-body{background:#fdfbff;border-color:#fff}
+.c2p-app .modal-title{font-weight:620}
+.c2p-app .setting-icon{background:rgba(245,228,247,.14);color:#f3e2f4;border:1px solid var(--border)}
+.c2p-app .theme-toggle button{background:rgba(237,240,251,.08);border-radius:17px;font-weight:620}
+.c2p-app .theme-toggle button.selected{border-color:rgba(248,234,253,.5);color:var(--text);background:rgba(235,221,247,.17)}
+.c2p-app .settings-privacy,.c2p-app .profile-disclaimer,.c2p-app .exit-notice{background:rgba(226,209,239,.1);color:var(--muted);border:1px solid var(--border);border-radius:15px}
+.c2p-app .report-options button{background:rgba(246,241,250,.07);border-radius:14px}
+.c2p-app .picker-holder{background:linear-gradient(155deg,#2a2c36,#181920);border-color:#ffffff32;backdrop-filter:blur(24px);border-radius:23px}
+:root[data-theme="light"] .picker-holder{background:#fff}
+.c2p-app .reaction-tabs button.active{background:rgba(227,209,238,.19);color:var(--text)}
+.c2p-app .sticker-grid button{background:rgba(255,255,255,.075);border-color:var(--border)}
+.c2p-app .arcade-window{background:linear-gradient(145deg,#24252d,#11131a);border-color:rgba(255,255,255,.2)}
+:root[data-theme="light"] .arcade-window{background:#f8f7fb}
+.c2p-app .arcade-header,.c2p-app .arcade-footer{border-color:var(--border)}
+.c2p-app .arcade-back,.c2p-app .arcade-leave{background:rgba(241,238,250,.09);border-color:var(--border);color:var(--text);border-radius:50px}
+.c2p-app .score-player,.c2p-app .pong-score{background:rgba(231,229,244,.08);border-color:var(--border)}
+.c2p-app .score-player.active,.c2p-app .pong-score.yours{border-color:#e4c2d7}
+.c2p-app .score-player strong,.c2p-app .pong-score strong{color:#e6d9f3}
+.c2p-app .memory-back{background:linear-gradient(145deg,#b3a5ba,#665d77);border-color:#e9d9ed}
+.c2p-app .memory-tip{background:rgba(230,218,239,.12);color:#d7c9e0}
+:root[data-theme="light"] .memory-tip{color:var(--accent)}
+.c2p-app .pong-court{border-color:#67606e}
+.c2p-app .pong-fineprint{color:var(--muted)}
+/* A bottom dock reproduces the reference's tactile navigation without fake history or accounts. */
+@media(max-width:830px){
+ .c2p-app .home-layout{display:flex;flex-direction:column;gap:28px}
+ .c2p-app .form-card{order:0;max-width:560px;width:100%}
+ .c2p-app .hero{order:1;max-width:560px;text-align:center}
+ .c2p-app .hero-tags{justify-content:center}
+ .c2p-app .hero>p{margin:auto}
+ .c2p-app .illustration{margin:12px auto 0;max-width:465px}
+ .c2p-app .chat-body{grid-template-columns:minmax(0,1fr) 275px}
+}
+@media(max-width:700px){
+ .c2p-app .topbar{height:66px;padding:0 17px}
+ .c2p-app .logo-text{font-size:22px}
+ .c2p-app .logo-mark{width:36px;height:36px}
+ .c2p-app .topbar-right{gap:12px}
+ .c2p-app .home-container{padding:19px 15px 6px}
+ .c2p-app .form-card{padding:24px 22px 23px;border-radius:30px}
+ .c2p-app .form-card-title h2{font-size:26px}
+ .c2p-app .form-card-icon{border-radius:50%}
+ .c2p-app .form-line{margin:24px 0}
+ .c2p-app .form-label label{font-size:12px}
+ .c2p-app .game-choice{min-height:99px;padding:12px;font-size:11px}
+ .c2p-app .hero{padding-top:22px}
+ .c2p-app .hero h1{font-size:clamp(38px,10.6vw,60px);line-height:1.08;letter-spacing:-2.6px}
+ .c2p-app .hero>p{font-size:13px}
+ .c2p-app .hero-tags span{font-size:10px}
+ .c2p-app .illustration{height:190px;overflow:hidden}
+ .c2p-app .illustration-board{left:35%;top:14px}
+ .c2p-app .floating-left{top:95px;left:0}
+ .c2p-app .floating-right{top:24px;right:0}
+ .c2p-app .quick-steps{gap:17px;margin-top:18px;padding:24px 15px}
+ .c2p-app .chat-layout{margin:0;width:100%;max-width:none}
+ .c2p-app .chat-card{height:calc(100dvh - 66px);min-height:410px;border:0;border-radius:0;box-shadow:none}
+ .c2p-app:has(.chat-layout) .footer{display:none}
+ .c2p-app .chat-header{padding:11px 16px;min-height:76px;background:rgba(19,23,29,.88)}
+ :root[data-theme="light"] .chat-header{background:#eae9f0}
+ .c2p-app .partner-avatar{width:40px;height:40px}
+ .c2p-app .partner-name-button strong{font-size:13px}
+ .c2p-app .partner-name-button small{font-size:10px}
+ .c2p-app .chat-header-actions{gap:3px}
+ .c2p-app .chat-header-actions .icon-button{width:33px;height:33px}
+ .c2p-app .chat-header-actions .icon-button:nth-child(2){display:none}
+ .c2p-app .next-button{border-radius:22px;padding:10px 12px;font-size:11px;margin-left:3px}
+ .c2p-app .chat-body{display:flex;position:relative;min-height:0}
+ .c2p-app .conversation{flex:1}
+ .c2p-app .conversation-scroll{padding:16px 17px 8px}
+ .c2p-app .conversation-start{margin:23px auto 28px;max-width:300px}
+ .c2p-app .conversation-start-icon{width:57px;height:57px}
+ .c2p-app .conversation-start h3{font-size:22px}
+ .c2p-app .message-bubble{font-size:12px}
+ .c2p-app .bubble-wrap{max-width:min(82%,300px)}
+ .c2p-app .composer-area{padding:7px 10px max(5px,env(safe-area-inset-bottom))}
+ .c2p-app .composer{margin:0 8px;min-height:55px}
+ .c2p-app .composer-footer{display:none}
+ .c2p-app .chat-dock{
+  margin:9px 6px 0;padding:7px 10px 4px;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;
+  border-top:1px solid rgba(255,255,255,.085);
+ }
+ .c2p-app .chat-dock button{
+  border:0;background:none;color:rgba(239,233,243,.57);border-radius:18px;
+  padding:5px 2px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:9px;line-height:1.1;min-height:45px;justify-content:center
+ }
+ .c2p-app .chat-dock button svg{stroke-width:1.5}
+ .c2p-app .chat-dock button.dock-selected{color:#fff}
+ .c2p-app .chat-dock button.dock-selected svg{
+  filter:drop-shadow(0 0 9px rgba(255,255,255,.34));
+  background:linear-gradient(145deg,rgba(251,246,255,.28),rgba(162,157,172,.1));
+  padding:6px;width:31px;height:31px;border:1px solid rgba(255,255,255,.19);border-radius:50%;
+ }
+ :root[data-theme="light"] .chat-dock button{color:#80798a}
+ :root[data-theme="light"] .chat-dock button.dock-selected{color:#46374e}
+ .c2p-app .game-sidebar{
+  position:fixed;left:0;right:0;bottom:0;top:auto;max-height:min(75dvh,640px);
+  z-index:30;border-radius:28px 28px 0 0;padding:24px 20px 20px;
+  background:linear-gradient(160deg,#35343c,#15171e 70%);
+  box-shadow:0 -20px 70px #0009
+ }
+ .c2p-app .game-sidebar.game-sidebar-open{transform:translateY(0)}
+ .c2p-app .sidebar-playing{display:none}
+ .c2p-app .inline-game{display:block}
+ .c2p-app .picker-holder{bottom:104%;width:min(355px,calc(100% - 20px))}
+ .c2p-app .arcade-window{border:0;border-radius:0;height:100dvh;max-height:100dvh}
+ .c2p-app .arcade-overlay{padding:0}
+ .c2p-app .arcade-intro h2{font-weight:600}
+}
+@media(max-width:400px){
+ .c2p-app .chat-header{padding:10px 10px}
+ .c2p-app .chat-header-actions .icon-button{width:29px;height:31px}
+ .c2p-app .partner-avatar{width:38px;height:38px}
+ .c2p-app .next-button{padding:9px 10px}
+ .c2p-app .form-card{padding:22px 19px}
+ .c2p-app .game-choice{min-height:97px}
+ .c2p-app .message-line{margin:13px 0}
+ .c2p-app .conversation-start{margin-top:16px}
+}
+@media(max-width:350px){
+ .c2p-app .chat-header-actions .heart-button{display:none}
+ .c2p-app .topbar .logo-text{font-size:20px}
+ .c2p-app .game-choice{font-size:10px}
+}
+
+/* Explicit, optional matching fallback — both players must opt in. */
+.c2p-app .fallback-choice{display:flex;gap:11px;align-items:flex-start;background:var(--surface-alt);border:1px solid var(--border);border-radius:15px;padding:12px 13px;margin:3px 0 17px;cursor:pointer}
+.c2p-app .fallback-choice input{margin:2px 0 0;width:17px;height:17px;accent-color:var(--accent);flex:0 0 auto}
+.c2p-app .fallback-choice span{display:flex;flex-direction:column;gap:5px;flex:1}
+.c2p-app .fallback-choice strong{font-size:11px;line-height:1.3;color:var(--text);font-weight:750}
+.c2p-app .fallback-choice small{font-size:10px;line-height:1.55;color:var(--muted)}
+:root[data-theme="light"] .c2p-app .fallback-choice{background:linear-gradient(145deg,#f8f5fb,#f0ecf5);border-color:var(--border)}
+:root[data-theme="light"] .c2p-app .fallback-choice input{accent-color:#624399}
+
+/* Separate original offline reaction GIFs from GIPHY search results. */
+.c2p-app .gif-tab{max-height:min(440px,57dvh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:10px 12px 12px}
+.c2p-app .gif-group-label{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:5px 0 9px;font-size:11px;color:var(--text)}
+.c2p-app .gif-group-label strong{font-weight:750}
+.c2p-app .gif-group-label small{font-size:9px;color:var(--muted)}
+.c2p-app .gif-local-grid{margin-bottom:16px;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;overflow:visible}
+.c2p-app .gif-local-grid button{position:relative;height:72px;border:1px solid var(--border);border-radius:11px;box-shadow:0 4px 10px rgba(0,0,0,.08)}
+.c2p-app .gif-local-grid button:hover{border-color:var(--accent);transform:translateY(-1px)}
+.c2p-app .gif-local-grid button img{display:block;width:100%;height:100%;object-fit:cover}
+:root[data-theme="light"] .c2p-app .gif-group-label{color:var(--text)}
+:root[data-theme="light"] .c2p-app .gif-local-grid button{background:#f3eef6;border-color:var(--border)}
+@media(max-width:390px){.c2p-app .gif-local-grid button{height:66px}}
+
+/* Keep local GIF tiles identifiable even before animated frames finish decoding. */
+.c2p-app .gif-local-grid button{
+ background:linear-gradient(145deg,#282532,#13141d);
+ overflow:hidden;
+}
+.c2p-app .gif-local-grid .gif-local-name{
+ position:absolute;inset:auto 0 0 0;
+ color:#fff;font-size:9px;font-weight:750;letter-spacing:.2px;
+ padding:7px 4px 4px;text-align:center;
+ background:linear-gradient(0deg,rgba(10,9,17,.91),rgba(15,13,22,.02));
+ pointer-events:none;text-shadow:0 1px 2px #000b;
+}
+.c2p-app .gif-local-grid img{background:transparent}
+:root[data-theme="light"] .c2p-app .gif-local-grid button{background:linear-gradient(135deg,#ede4f2,#ded5e6)}

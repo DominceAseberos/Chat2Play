@@ -1,0 +1,187 @@
+.arcade-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:16px;background:rgba(16,11,30,.76);backdrop-filter:blur(9px)}
+.arcade-window{display:flex;flex-direction:column;width:min(790px,100%);max-height:min(95dvh,900px);overflow:hidden;background:var(--surface);border:1px solid var(--border);box-shadow:0 30px 130px #07051a88;border-radius:24px;color:var(--text)}
+.arcade-header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;min-height:79px;padding:12px 23px;border-bottom:1px solid var(--border)}
+.arcade-back,.arcade-leave{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border);border-radius:11px;background:var(--surface-alt);color:var(--text);font-size:12px;font-weight:800;padding:10px 12px;width:max-content;max-width:100%}
+.arcade-leave{justify-self:end}.arcade-back:hover,.arcade-leave:hover{border-color:var(--accent)}
+.arcade-heading{display:flex;gap:9px;align-items:center}.arcade-heading-mark{width:40px;height:40px;border-radius:13px;background:var(--accent-light);color:var(--accent);display:grid;place-items:center;flex:0 0 auto}.arcade-heading strong,.arcade-heading small{display:block;white-space:nowrap}.arcade-heading strong{font:800 17px "Outfit"}.arcade-heading small{font-size:10px;color:var(--muted);margin-top:2px}
+.arcade-content{overflow-y:auto;overscroll-behavior:contain;padding:18px 38px 22px;scrollbar-width:thin}.arcade-intro{text-align:center;margin:4px 0 20px}.arcade-live{color:var(--accent);font-size:9px;letter-spacing:1.5px;font-weight:900;display:inline-flex;align-items:center;gap:6px}.arcade-live i{width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 0 4px color-mix(in srgb,var(--green) 17%,transparent)}.arcade-intro h2{font:800 clamp(25px,3.7vw,36px)/1.1 "Outfit";letter-spacing:-.8px;margin:11px 0 6px}.arcade-intro p{color:var(--muted);font-size:12px;line-height:1.5;margin:0}
+.arcade-footer{border-top:1px solid var(--border);padding:14px 23px;display:flex;align-items:center;justify-content:space-between;gap:8px}.arcade-footer>span{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px}.arcade-footer>span svg{color:var(--like)}.arcade-footer button{display:flex;align-items:center;gap:7px;border:0;color:var(--accent);font-size:11px;font-weight:800;background:none;padding:7px}
+.duel-scoreboard{max-width:410px;margin:0 auto 12px;display:grid;grid-template-columns:1fr 90px 1fr;align-items:stretch;gap:8px}
+.score-player{border:1.5px solid var(--border);background:var(--surface-alt);border-radius:16px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:11px 9px;transition:border-color .2s,box-shadow .2s}
+.score-player.active{border-color:var(--accent);box-shadow:0 5px 19px color-mix(in srgb,var(--accent) 19%,transparent)}.score-sub{font-size:9px;font-weight:800;letter-spacing:1.2px;color:var(--muted)}.score-player strong{font:900 27px "Outfit";color:var(--accent)}.score-title{font-size:10px;color:var(--muted)}
+.duel-score-divider{display:flex;flex-direction:column;gap:7px;align-items:center;justify-content:center;color:var(--accent)}.duel-score-divider small{color:var(--muted);font-weight:900;font-size:9px;white-space:nowrap}
+.duel-turn-note{min-height:18px;text-align:center;margin:8px 0 13px;color:var(--muted);font-size:12px;font-weight:700}.duel-turn-note.your-turn{color:var(--accent)}
+.memory-grid{width:min(100%,410px);margin:0 auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;perspective:800px}
+.memory-card{aspect-ratio:4/4.6;border:0;padding:0;background:transparent;perspective:800px;border-radius:13px;outline-offset:3px}
+.memory-card:disabled{opacity:1}.memory-card-inner{position:relative;height:100%;width:100%;display:block;transform-style:preserve-3d;transition:transform .52s cubic-bezier(.23,.77,.31,1.08);border-radius:13px}
+.memory-card.flipped .memory-card-inner{transform:rotateY(180deg)}
+.memory-face{position:absolute;inset:0;display:grid;place-items:center;border-radius:13px;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
+.memory-back{color:var(--accent);background:linear-gradient(150deg,color-mix(in srgb,var(--accent) 82%,#fff),var(--accent));border:2px solid color-mix(in srgb,var(--accent) 60%,#fff);box-shadow:0 4px 13px #6852c52e}
+.memory-back::before{content:"";position:absolute;inset:7px;border:1.5px solid #ffffff40;border-radius:8px}
+.memory-back-mark{color:#fff;width:43px;height:43px;display:grid;place-items:center;background:#ffffff23;border-radius:12px}
+.memory-card:not(:disabled):hover .memory-back{filter:brightness(1.09);box-shadow:0 7px 18px #6852c54b}
+.memory-front{background:var(--accent-light);color:var(--accent);transform:rotateY(180deg);border:2px solid color-mix(in srgb,var(--accent) 37%,transparent)}
+.memory-card.matched .memory-front{border-color:var(--green);background:color-mix(in srgb,var(--green) 13%,var(--surface));box-shadow:0 4px 22px color-mix(in srgb,var(--green) 20%,transparent)}
+.match-check{position:absolute;right:6px;top:6px;color:var(--green)}.symbol-sun{color:#ecaf48;background:#fff4d9}.symbol-moon{color:#8f84dc;background:#eae7ff}.symbol-heart{color:#e7829d;background:#fff0f3}.symbol-star{color:#dba64a;background:#fff0ca}.symbol-gem{color:#37b9a2;background:#daf7ef}.symbol-zap{color:#628ee1;background:#e2efff}
+.memory-tip{max-width:410px;margin:15px auto 0;display:flex;align-items:flex-start;gap:8px;padding:12px 13px;border-radius:11px;background:var(--accent-light);font-size:11px;color:var(--accent);line-height:1.5}.memory-tip svg{flex:0 0 auto}
+.pong-game{width:min(100%,640px);margin:0 auto}.pong-scorebar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:12px}
+.pong-score{display:flex;align-items:center;gap:12px;font-weight:900;border:1px solid var(--border);padding:10px 14px;background:var(--surface-alt);border-radius:13px}.pong-score.left{justify-content:flex-end}.pong-score.right{justify-content:flex-start}.pong-score span{font-size:10px;color:var(--muted)}.pong-score strong{font:900 29px "Outfit";color:var(--accent)}.pong-score.right strong{color:#f09e77}
+.pong-score.yours{border-color:var(--accent)}.pong-score-divider{font-size:10px;letter-spacing:1px;white-space:nowrap;font-weight:900;color:var(--muted)}
+.pong-court{position:relative;overflow:hidden;border:5px solid #504078;border-radius:18px;box-shadow:0 16px 45px #29204238}.pong-canvas{display:block;width:100%;aspect-ratio:1.6;height:auto;max-height:390px;touch-action:none;cursor:ns-resize;user-select:none}
+.pong-serve-note{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#141027b5;color:#fff;font-size:12px;font-weight:900;padding:10px 16px;border-radius:20px;pointer-events:none}
+.pong-controls{display:flex;align-items:center;justify-content:space-between;gap:11px;margin:13px 0;font-size:11px;color:var(--muted);line-height:1.5}.pong-my-paddle{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--text)}.paddle-key{width:5px;height:20px;border-radius:3px;background:#a38bff;display:inline-block}.paddle-key.right{background:#ffad83}
+.pong-fineprint{display:flex;justify-content:center;align-items:center;gap:6px;margin:0;color:var(--muted);font-size:10px}
+.arcade-mini{text-align:center;padding:12px 2px 6px}.arcade-mini p{font-size:11px;color:var(--muted);line-height:1.5;margin:5px 0 11px}.arcade-mini .primary-button{font-size:11px;padding:10px 12px}
+.game-choice-symbol.memory,.sidebar-game-icon.memory{background:#dff8eb;color:#2aaf88}
+.game-choice-symbol.pong,.sidebar-game-icon.pong{background:#ffebef;color:#e67699}
+.arcade-result{margin:15px auto 0;max-width:430px;text-align:center;background:var(--accent-light);padding:18px;border-radius:16px}.arcade-trophy{height:45px;width:45px;border-radius:15px;background:var(--surface);color:var(--accent);display:grid;place-items:center;margin:auto}.arcade-result h3{font:900 24px "Outfit";margin:9px 0 3px}.arcade-result p{font-size:11px;line-height:1.5;color:var(--muted);margin:0 0 11px}.arcade-result button{font-size:11px}
+@media(max-width:700px){.arcade-overlay{padding:0}.arcade-window{border:0;border-radius:0;width:100%;height:100dvh;max-height:100dvh}.arcade-header{padding:10px 13px;min-height:67px}.arcade-heading-mark{width:34px;height:34px}.arcade-heading strong{font-size:14px}.arcade-back,.arcade-leave{padding:9px 8px;font-size:11px}.arcade-back span,.arcade-leave span{display:none}.arcade-intro{margin:3px 0 15px}.arcade-intro h2{font-size:29px}.arcade-content{padding:15px 15px 18px;flex:1}.arcade-footer{padding:10px 13px}.arcade-footer>span{font-size:10px}.memory-grid{gap:9px;max-width:390px}.memory-card{aspect-ratio:4/4.6}.pong-score{padding:8px 9px;gap:7px}.pong-score span{font-size:9px}.pong-score strong{font-size:25px}.pong-score-divider{font-size:9px}.pong-canvas{aspect-ratio:1.22}.pong-controls{align-items:flex-start;font-size:10px}.arcade-result{padding:14px}.arcade-intro p{font-size:11px}}
+@media(max-width:360px){.memory-grid{gap:7px}.memory-face{border-radius:10px}.memory-back-mark{width:34px;height:34px}.duel-scoreboard{grid-template-columns:1fr 67px 1fr;gap:5px}.arcade-intro h2{font-size:25px}.arcade-header{gap:5px}.arcade-footer>span{display:none}.arcade-footer{justify-content:center}}
+@media(prefers-reduced-motion:reduce){.memory-card-inner{transition:none!important}}
+:root[data-reduced-motion=true] .memory-card-inner{transition:none!important}
+
+/* Mobile games use a single viewport instead of a scrollable game panel. */
+@media(max-width:700px){
+ .arcade-window{height:100dvh;max-height:100dvh;min-height:0}
+ .arcade-header{min-height:57px;padding:7px 12px;flex:0 0 auto}
+ .arcade-heading-mark{width:32px;height:32px}
+ .arcade-heading small{display:none}
+ .arcade-content{flex:1;min-height:0;overflow:hidden;padding:7px 12px;display:flex;flex-direction:column;justify-content:center}
+ .arcade-intro{margin:0 0 clamp(6px,1.5dvh,12px);flex:0 0 auto}
+ .arcade-intro h2{font-size:clamp(19px,3.6dvh,26px);margin:4px 0}
+ .arcade-intro p{font-size:10px}
+ .arcade-footer{flex:0 0 auto;padding:7px 10px;min-height:42px}
+ .duel-scoreboard{max-width:345px;grid-template-columns:1fr 68px 1fr;gap:4px;margin:0 auto 4px}
+ .score-player{border-radius:11px;padding:5px 6px;gap:0}
+ .score-player strong{font-size:20px}
+ .score-title{font-size:9px}
+ .duel-score-divider{gap:2px}
+ .duel-turn-note{margin:5px 0 7px;font-size:11px;min-height:17px}
+ .memory-grid{width:min(100%,calc((100dvh - 293px) * 1.12),355px);gap:6px}
+ .memory-card{aspect-ratio:1/1.08}
+ .memory-back-mark{height:30px;width:30px}
+ .memory-back-mark svg,.memory-front>svg{width:21px;height:21px}
+ .memory-tip{margin:7px auto 0;padding:7px;font-size:10px}
+ .pong-scorebar{margin-bottom:8px}
+ .pong-canvas{height:min(43dvh,350px);max-height:43dvh;aspect-ratio:auto}
+ .pong-controls{margin:8px 0;font-size:10px}
+ .pong-fineprint{display:none}
+ .arcade-result{margin:7px auto;padding:13px}
+}
+@media(max-width:700px) and (max-height:650px){
+ .arcade-intro p,.memory-tip{display:none}
+ .arcade-live{font-size:8px}
+ .pong-controls span:last-child{display:none}
+}
+@media(max-width:700px) and (max-height:520px){
+ .arcade-intro h2{font-size:18px}
+ .arcade-footer>span{display:none}
+ .memory-grid{width:min(100%,calc((100dvh - 250px) * .96),275px)}
+ .score-player strong{font-size:17px}
+}
+
+/* VERTICAL PING PONG. Both players see THEIR paddle at the bottom.
+   The authoritative server still simulates left/right; canvas rotates it. */
+.arcade-window.pong-window{height:min(95dvh,900px);max-height:95dvh}
+.arcade-window.pong-window .arcade-content.pong-content{
+ flex:1;min-height:0;overflow:hidden;display:flex;justify-content:center;
+ padding:12px 16px 10px
+}
+.arcade-window.pong-window .arcade-footer{display:none}
+.arcade-window.pong-window .arcade-header{flex-shrink:0}
+.pong-content .pong-game{
+ width:min(100%,430px);height:100%;min-height:0;max-width:430px;
+ display:flex;flex-direction:column;gap:8px;margin:0 auto
+}
+.pong-content .pong-court{
+ position:relative;isolation:isolate;flex:1;min-height:0;
+ width:100%;border:5px solid #58507b;border-radius:19px;
+ overflow:hidden;background:#25203f;
+ box-shadow:0 12px 30px #201a4836
+}
+.pong-content .pong-canvas{
+ display:block;width:100%;height:100%;max-height:none;min-height:0;
+ aspect-ratio:auto;touch-action:none;cursor:ew-resize;user-select:none
+}
+.pong-content .pong-floating-scores{
+ position:absolute;top:12px;left:12px;right:12px;z-index:8;
+ display:flex;align-items:flex-start;justify-content:space-between;
+ pointer-events:none;gap:6px
+}
+.pong-content .pong-floating-score{
+ background:rgba(27,23,52,.88);color:#fff;border:1px solid rgba(214,199,247,.42);
+ border-radius:12px;padding:7px 11px;min-width:74px;
+ display:flex;flex-direction:column;gap:1px;
+ box-shadow:0 8px 20px #1c143f56;backdrop-filter:blur(6px)
+}
+.pong-content .pong-floating-score span{font-size:9px;letter-spacing:.7px;font-weight:850;color:#e7dafa}
+.pong-content .pong-floating-score strong{font:900 24px/1.15 "Outfit",sans-serif;color:#fff;font-variant-numeric:tabular-nums}
+.pong-content .pong-floating-score.opponent{border-color:#ab94ef;color:#d7c5ff}
+.pong-content .pong-floating-score.self{border-color:#ffac87;color:#ffd9c7;text-align:right;align-items:flex-end}
+.pong-content .pong-first-to{font-size:9px;font-weight:900;letter-spacing:1px;color:#f7edff;
+ border:1px solid #ffffff38;background:#281f4a9c;border-radius:999px;padding:7px 10px;white-space:nowrap}
+.pong-content .pong-court-label{
+ position:absolute;z-index:3;left:50%;transform:translateX(-50%);
+ font-size:9px;font-weight:900;letter-spacing:1.1px;white-space:nowrap;
+ color:#d8c5fa;pointer-events:none;text-shadow:0 2px 12px #211b45b0
+}
+.pong-content .pong-court-label.opponent{top:60px}
+.pong-content .pong-court-label.self{bottom:59px;color:#ffdbcb}
+.pong-content .pong-controls{
+ margin:0;min-height:32px;flex-shrink:0;justify-content:space-between;
+ gap:10px;font-size:11px;color:var(--muted)
+}
+.pong-content .pong-my-paddle{font-size:11px;color:var(--text)}
+.pong-content .paddle-key.bottom{height:5px;width:21px;border-radius:4px;background:#ffac87}
+@media(max-width:700px){
+ .arcade-window.pong-window{height:100dvh;max-height:100dvh}
+ .arcade-window.pong-window .arcade-content.pong-content{padding:6px 9px 10px}
+ .pong-content .pong-court{border-width:4px;border-radius:16px}
+ .pong-content .pong-floating-scores{top:9px;left:9px;right:9px}
+ .pong-content .pong-floating-score{padding:6px 8px;min-width:62px;border-radius:10px}
+ .pong-content .pong-floating-score span{font-size:8px}
+ .pong-content .pong-floating-score strong{font-size:22px}
+ .pong-content .pong-first-to{padding:6px 8px;font-size:8px}
+ .pong-content .pong-controls{font-size:10px;min-height:27px}
+ .pong-content .pong-my-paddle{font-size:10px}
+ .pong-content .pong-court-label.opponent{top:49px}
+ .pong-content .pong-court-label.self{bottom:49px}
+}
+@media(max-width:360px){
+ .pong-content .pong-floating-score{min-width:56px;padding:6px}
+ .pong-content .pong-first-to{font-size:7px;padding:6px 5px}
+}
+@media(max-width:700px) and (max-height:600px){
+ .arcade-window.pong-window .arcade-content.pong-content{padding:4px 8px}
+ .pong-content .pong-controls{min-height:24px;margin:0}
+ .pong-content .pong-court-label.opponent{top:43px}
+}
+@media(prefers-reduced-motion:reduce){
+ .pong-content .pong-floating-scores{backdrop-filter:none}
+}
+
+/* Three.js canvas inherits vertical court sizing without any 2D overlay. */
+.pong-content .pong-scene-3d{display:block;width:100%;height:100%;touch-action:none;cursor:ew-resize;outline:none;position:relative}
+.pong-content .pong-scene-3d canvas{display:block;width:100%;height:100%;touch-action:none}
+.pong-content .pong-court{background:#15152f}
+
+.pong-content .pong-charge-hud{position:absolute;z-index:9;left:50%;bottom:68px;transform:translateX(-50%);
+ width:min(82%,265px);padding:7px 10px;border:1px solid #ab9fd14f;border-radius:12px;
+ background:#1d1c3fbd;color:#e8dffe;text-align:center;pointer-events:none;display:grid;gap:3px}
+.pong-charge-hud>span{font-size:9px;letter-spacing:.5px;font-weight:900}
+.pong-charge-hud small{font-size:9px;color:#d4c5ea}
+.pong-charge-track{height:8px;border-radius:10px;overflow:hidden;background:#ffffff27}
+.pong-charge-track i{height:100%;display:block;width:calc(var(--charge,0) * 100%);min-width:0;
+ background:linear-gradient(90deg,#83ecf2,#fcbd83);border-radius:10px;transition:width 75ms linear}
+.pong-content .pong-load-screen{position:absolute;z-index:13;inset:0;display:flex;flex-direction:column;
+ justify-content:center;align-items:center;gap:13px;padding:24px;background:#1a183bdd;
+ color:#fff;font-size:16px;font-weight:900;text-align:center}
+.pong-load-screen small{color:#d9c9fa;font-size:11px;font-weight:700}
+@media(max-height:620px){.pong-content .pong-charge-hud{bottom:38px;padding:5px}}
+
+/* Keep the 3D arena and character reactions visible when the match ends. */
+.pong-content .pong-result-float{position:absolute;z-index:15;left:12px;right:12px;top:43%;transform:translateY(-50%);pointer-events:none}
+.pong-content .pong-result-float .arcade-result{margin:0 auto;max-width:315px;background:rgba(31,26,57,.94);border:1px solid #c1aafa8c;color:#fff;box-shadow:0 20px 60px #17102caa;pointer-events:auto}
+.pong-content .pong-result-float .arcade-result p{color:#e7d8fb}
+.pong-content .pong-result-float .arcade-result h3{color:#fff}
+@media(max-width:360px){.pong-content .pong-result-float{left:8px;right:8px}.pong-content .pong-result-float .arcade-result{padding:10px}}
