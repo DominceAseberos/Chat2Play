@@ -120,13 +120,6 @@
 .pong-content .pong-floating-score.self{border-color:#ffac87;color:#ffd9c7;text-align:right;align-items:flex-end}
 .pong-content .pong-first-to{font-size:9px;font-weight:900;letter-spacing:1px;color:#f7edff;
  border:1px solid #ffffff38;background:#281f4a9c;border-radius:999px;padding:7px 10px;white-space:nowrap}
-.pong-content .pong-court-label{
- position:absolute;z-index:3;left:50%;transform:translateX(-50%);
- font-size:9px;font-weight:900;letter-spacing:1.1px;white-space:nowrap;
- color:#d8c5fa;pointer-events:none;text-shadow:0 2px 12px #211b45b0
-}
-.pong-content .pong-court-label.opponent{top:60px}
-.pong-content .pong-court-label.self{bottom:59px;color:#ffdbcb}
 .pong-content .pong-controls{
  margin:0;min-height:32px;flex-shrink:0;justify-content:space-between;
  gap:10px;font-size:11px;color:var(--muted)
@@ -144,8 +137,6 @@
  .pong-content .pong-first-to{padding:6px 8px;font-size:8px}
  .pong-content .pong-controls{font-size:10px;min-height:27px}
  .pong-content .pong-my-paddle{font-size:10px}
- .pong-content .pong-court-label.opponent{top:49px}
- .pong-content .pong-court-label.self{bottom:49px}
 }
 @media(max-width:360px){
  .pong-content .pong-floating-score{min-width:56px;padding:6px}
@@ -154,7 +145,6 @@
 @media(max-width:700px) and (max-height:600px){
  .arcade-window.pong-window .arcade-content.pong-content{padding:4px 8px}
  .pong-content .pong-controls{min-height:24px;margin:0}
- .pong-content .pong-court-label.opponent{top:43px}
 }
 @media(prefers-reduced-motion:reduce){
  .pong-content .pong-floating-scores{backdrop-filter:none}
@@ -165,7 +155,7 @@
 .pong-content .pong-scene-3d canvas{display:block;width:100%;height:100%;touch-action:none}
 .pong-content .pong-court{background:#15152f}
 
-.pong-content .pong-charge-hud{position:absolute;z-index:9;left:50%;bottom:68px;transform:translateX(-50%);
+.pong-content .pong-charge-hud{position:absolute;z-index:9;left:50%;bottom:14px;transform:translateX(-50%);
  width:min(82%,265px);padding:7px 10px;border:1px solid #ab9fd14f;border-radius:12px;
  background:#1d1c3fbd;color:#e8dffe;text-align:center;pointer-events:none;display:grid;gap:3px}
 .pong-charge-hud>span{font-size:9px;letter-spacing:.5px;font-weight:900}
@@ -177,9 +167,9 @@
  justify-content:center;align-items:center;gap:13px;padding:24px;background:#1a183bdd;
  color:#fff;font-size:16px;font-weight:900;text-align:center}
 .pong-load-screen small{color:#d9c9fa;font-size:11px;font-weight:700}
-@media(max-height:620px){.pong-content .pong-charge-hud{bottom:38px;padding:5px}}
+@media(max-height:620px){.pong-content .pong-charge-hud{bottom:6px;padding:5px}}
 
-/* Keep the 3D arena and character reactions visible when the match ends. */
+/* Keep the 3D arena visible when the match ends. */
 .pong-content .pong-result-float{position:absolute;z-index:15;left:12px;right:12px;top:43%;transform:translateY(-50%);pointer-events:none}
 .pong-content .pong-result-float .arcade-result{margin:0 auto;max-width:315px;background:rgba(31,26,57,.94);border:1px solid #c1aafa8c;color:#fff;box-shadow:0 20px 60px #17102caa;pointer-events:auto}
 .pong-content .pong-result-float .arcade-result p{color:#e7d8fb}

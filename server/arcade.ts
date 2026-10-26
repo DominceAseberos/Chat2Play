@@ -1,4 +1,6 @@
 import { randomInt } from "node:crypto";
+import {MAX_SMASH_CHARGE_MS} from "../src/pongTiming.js";
+export {MAX_SMASH_CHARGE_MS};
 
 export type Side = 0 | 1;
 export type SymbolId = "sun" | "moon" | "heart" | "star" | "gem" | "zap";
@@ -23,7 +25,6 @@ export type PongView={
   paddles:[number,number];scores:[number,number];serving:boolean;
   charge:[number,number];shot:[number,number];lastSmash:[number,number];netHits:number;
 };
-export const MAX_SMASH_CHARGE_MS=1500;
 export const PONG_PADDLE_HALF = 0.12;
 export const PONG_RADIUS = 0.014;
 export const PONG_WIN_SCORE = 5;
@@ -109,7 +110,7 @@ export function setPongCharge(p:PongState,side:Side,holding:boolean,now=Date.now
     if(p.chargeStarted[side]===null)p.chargeStarted[side]=now;
   }else if(p.chargeStarted[side]!==null){
     // Releasing triggers a swing. A shot can hit only the next incoming ball,
-    // within one second. Charging beyond 1.5 seconds never raises power.
+    // within one second. Charging beyond one second never raises power.
     const power=Math.max(.08,Math.min(1,(now-p.chargeStarted[side]!)/MAX_SMASH_CHARGE_MS));
     p.shot[side]={power,until:now+1100};
     p.chargeStarted[side]=null;

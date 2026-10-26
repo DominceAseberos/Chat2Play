@@ -74,8 +74,7 @@ function PongArena({game,side,onPaddle,onCharge,onSceneReady,onReplay}:{game:Gam
   <div className="pong-court">
    <Suspense fallback={<div className="pong-load-screen" role="status">Loading 3D physics engine?</div>}>
     <PongScene3D snapshot={state} side={side} onPaddle={onPaddle}
-     onCharge={onCharge} onReady={onSceneReady} active={game.phase==="playing"}
-     outcome={game.phase==="finished"?(game.winner==="draw"?"draw":game.winner===side?"win":"lose"):null}/>
+     onCharge={onCharge} onReady={onSceneReady} active={game.phase==="playing"}/>
    </Suspense>
    <div className="pong-floating-scores" aria-label="Scores, first to five">
     <div className="pong-floating-score opponent"><span>STRANGER</span><strong>{state.scores[opponent]}</strong></div>
@@ -90,10 +89,8 @@ function PongArena({game,side,onPaddle,onCharge,onSceneReady,onReplay}:{game:Gam
    {state.serving&&game.phase==="playing"&&<span className="pong-serve-note">Next serve</span>}
    <div className="pong-charge-hud" aria-label="Smash power">
     <span>HOLD TO CHARGE - RELEASE TO SMASH</span><div className="pong-charge-track"><i/></div>
-    <small>Maximum power in 1.5 seconds</small>
+    <small>Maximum power in 1 second</small>
    </div>
-   <div className="pong-court-label opponent">OPPONENT</div>
-   <div className="pong-court-label self">YOUR SIDE</div>
    {game.phase==="finished"&&<div className="pong-result-float"><ResultBanner game={game} side={side} onReplay={onReplay}/></div>}
   </div>
   <div className="pong-controls"><span className="pong-my-paddle"><span className="paddle-key bottom"/> Your paddle is at the bottom</span><span>Drag left / right to move</span></div>

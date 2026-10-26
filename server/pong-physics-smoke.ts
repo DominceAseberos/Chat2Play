@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import {createPong,pongView,setPongCharge,tickPong,MAX_SMASH_CHARGE_MS} from "./arcade.js";
 const fixed=10_000;
+const partial=createPong();
+setPongCharge(partial,0,true,fixed);
+assert.equal(pongView(partial,fixed+250).charge[0],.25,"A short hold should build some power");
+assert.equal(pongView(partial,fixed+750).charge[0],.75,"A longer hold should build more power");
+setPongCharge(partial,0,false,fixed+600);
+assert.equal(partial.shot[0]?.power,.6,"Release should preserve proportional power");
 const p=createPong();
 p.serveAt=0;p.lastTick=fixed;p.ball={x:.069,y:.5,vx:-.40,vy:0,h:.38,vh:0};p.paddles=[.5,.5];
 setPongCharge(p,0,true,fixed);

@@ -42,7 +42,10 @@ try{
   console.log("PASS PONG scene ready on both players");
   const rect=await sa.boundingBox();
   await a.mouse.move(rect.x+rect.width*.30,rect.y+rect.height*.70);
-  await a.mouse.down();await a.waitForTimeout(1700);
+  await a.mouse.down();await a.waitForTimeout(450);
+  const partialPower=Number(await sa.getAttribute("data-power"));
+  assert.ok(partialPower>.35&&partialPower<.75,"A short hold should build partial power, got "+partialPower);
+  await a.waitForTimeout(650);
   const power=Number(await sa.getAttribute("data-power"));
   assert.ok(power>=.99&&power<=1,"Charge should cap at 1.0, got "+power);
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/charged-pong-held-"+width+".png"});
@@ -56,10 +59,11 @@ try{
   const calls=Number(await sa.getAttribute("data-draw-calls"));
   assert.ok(calls<115,"WebGL mobile budget "+calls);
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/charged-pong-release-"+width+".png"});
+  console.log("PASS PONG physical height, 3D trail, shot and graphics budget",calls);
+  if(process.env.C2P_ONLY_GAME!=="pong"){
   await a.getByRole("button",{name:"End game"}).click();
   await a.getByRole("button",{name:"Quit game",exact:false}).last().click();
   await a.locator(".arcade-overlay").waitFor({state:"hidden",timeout:10000});
-  console.log("PASS PONG physical height, 3D trail, shot and graphics budget",calls);
   await invite(a,b,"Rock Paper Scissors");
   const settings=a.locator(".rps-preselect:visible").first();
   await settings.getByText("Choose how many wins").waitFor({timeout:8000});
@@ -86,8 +90,9 @@ try{
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/rps-bestof-win-"+width+".png"});
   await b.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/rps-bestof-lose-"+width+".png"});
   await a.locator(".rps-stage-status:visible").filter({hasText:"MATCH WINNER!"}).first().waitFor({timeout:7000});
-  if(errors.length)throw Error("Browser page errors: "+errors.join(" | "));
   console.log("PASS RPS preselect custom target 1, 3-second simultaneous reveal, authoritative winner, expressions and match finish");
+  }
+  if(errors.length)throw Error("Browser page errors: "+errors.join(" | "));
  }finally{await Promise.all(ctx.map(c=>c.close()));}
 }catch(e){console.error("TEST FAILED",e);process.exitCode=1;}
 await browser.close();

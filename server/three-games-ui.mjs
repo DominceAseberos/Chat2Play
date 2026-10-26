@@ -49,6 +49,7 @@ for(const [width,height] of pairs){
    width:el.clientWidth,height:el.clientHeight,me:el.dataset.selfPaddleX,opponent:el.dataset.opponentPaddleX,side:el.dataset.perspective}))]);
   for(const v of values)assert.ok(v.canvasCount===1&&v.calls<100&&v.height>v.width*1.1,"Pong 3D performance/orientation "+JSON.stringify(v));
   assert.notEqual(values[0].side,values[1].side);
+  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/test-3d-pong-"+width+"-center.png"});
   const box=await sceneA.boundingBox();
   await a.mouse.move(box.x+box.width*.18,box.y+box.height*.84);await a.mouse.down();await a.mouse.up();
   await a.waitForTimeout(380);

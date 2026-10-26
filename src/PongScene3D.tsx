@@ -1,55 +1,21 @@
 import {useEffect,useRef} from "react";
 import * as THREE from "three";
 import type {Game,Side} from "./Pieces";
+import {MAX_SMASH_CHARGE_MS} from "./pongTiming";
 
 type Pong=NonNullable<Game["pong"]>;
 type Props={side:Side;snapshot:Pong;onPaddle:(value:number)=>void;
- onCharge:(holding:boolean)=>void;onReady:()=>void;active:boolean;outcome?:"win"|"lose"|"draw"|null};
+ onCharge:(holding:boolean)=>void;onReady:()=>void;active:boolean};
 
-// Compact versions of the two Pinoy Henyo character designs. The distinctive
-// blue hoodie and pink overalls/hair bow are retained, while geometry stays
-// light enough to run alongside the server-authoritative Pong simulation.
-function arenaAvatar(which:Side){
- const g=new THREE.Group(),blue=which===0;
- const skin=blue?"#e9c3a4":"#ffd8bf",hair=blue?"#403b61":"#84536c";
- const clothing=blue?"#7bb5ed":"#ef9eaf",pants=blue?"#535b9a":"#8f77ad";
- function orb(color:string,r:number,x:number,y:number,z:number,sx=1,sy=1,sz=1){
-  const mesh=new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),
-   new THREE.MeshStandardMaterial({color,flatShading:true,roughness:.83}));
-  mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);g.add(mesh);return mesh;
- }
- const body=orb(clothing,.56,0,.89,0,1.12,1.1,.74);
- const head=new THREE.Group();head.position.y=1.7;g.add(head);
- const addHead=(color:string,r:number,x:number,y:number,z:number,sx=1,sy=1,sz=1)=>{
-  const mesh=new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),
-   new THREE.MeshStandardMaterial({color,flatShading:true,roughness:.83}));
-  mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);head.add(mesh);return mesh;
- };
- addHead(skin,.55,0,0,0,1,1,.84);
- addHead(hair,.53,0,.31,-.07,1.04,.48,.90);
- if(!blue){addHead(hair,.23,-.47,.03,-.05,.72,1.5,.88);
-  addHead("#ffe49a",.13,.31,.51,.22,1.4,.69,.65);}
- else addHead(hair,.18,-.33,.40,.29,1.2,.65,.90);
- for(const x of [-.19,.19])addHead("#36314e",.064,x,.01,.455,1,1.3,.54);
- const mouth=addHead("#965f75",.065,0,-.23,.458,1.2,.48,.3);
- const hands=[] as THREE.Mesh[];
- for(const x of [-.59,.59]){
-  hands.push(orb(skin,.17,x,.71,.31,1,.98,.86));
-  orb(pants,.24,x*.50,.27,.13,.9,1,.9);
-  orb(blue?"#ede3fb":"#ad7298",.19,x*.53,.10,.31,1.15,.54,1.45);
- }
- g.userData.avatarVariant=which;
- return {group:g,head,hands,mouth,body};
-}
 // Server continues to simulate canonical sideways Pong; only the camera
 // transforms coordinates for the local player.
-export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,active,outcome}:Props){
+export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,active}:Props){
  const mount=useRef<HTMLDivElement>(null);
  const latest=useRef(snapshot),send=useRef(onPaddle),chargeCallback=useRef(onCharge),
- readyCallback=useRef(onReady),activeRef=useRef(active),resultRef=useRef(outcome);
+ readyCallback=useRef(onReady),activeRef=useRef(active);
  const initialized=useRef(false);
  useEffect(()=>{latest.current=snapshot;send.current=onPaddle;chargeCallback.current=onCharge;
-  readyCallback.current=onReady;activeRef.current=active;resultRef.current=outcome;},[snapshot,onPaddle,onCharge,onReady,active,outcome]);
+  readyCallback.current=onReady;activeRef.current=active;},[snapshot,onPaddle,onCharge,onReady,active]);
  useEffect(()=>{
   const host=mount.current;if(!host)return;
   let renderer:THREE.WebGLRenderer;
@@ -75,25 +41,8 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material(color));
    m.position.set(x,y,z);scene.add(m);return m;
   };
-  // Decorative studio without an audience, low draw call count.
+  // Keep the court clear so the paddles and ball are the only game pieces.
   box(20,.15,25,"#1c1b38",0,-.62,0);
-  for(const x of [-3.6,3.6]){
-   box(.22,2.8,.26,"#41416e",x,.7,-3.5);
-   box(.13,2.6,.10,x<0?"#89edec":"#d59ff4",x,.75,-3.36);
-   for(const z of [-4.2,0,4.2]){
-    box(.15,.09,1.15,x<0?"#61dbe7":"#c5a9ed",x,.10,z);
-   }
-  }
-  // Keep overhead rigging behind the court; never cross the playable table
-  // in screen-space (especially on a tall, steep mobile camera).
-  for(const z of [-5.4,-4.5]){
-   box(7.5,.10,.15,"#514e7e",0,3.1,z);
-   for(const x of [-2.3,0,2.3]){
-    const lamp=new THREE.Mesh(new THREE.IcosahedronGeometry(.16,1),
-     new THREE.MeshBasicMaterial({color:x===0?"#e3c6ff":"#83e5f7"}));
-    lamp.position.set(x,2.9,z);scene.add(lamp);
-   }
-  }
   // Table surface and structural details. +Z is always YOUR end.
   box(5.28,.24,8.45,"#333ca2",0,.02,0);
   box(5.10,.025,8.25,"#4151be",0,.159,0);
@@ -116,35 +65,40 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   const paddles=[new THREE.Group(),new THREE.Group()];
   const buildPaddle=(own:boolean)=>{
    const g=new THREE.Group();
-   const rim=new THREE.Mesh(new THREE.CylinderGeometry(.57,.57,.12,28),material(own?"#7d202d":"#27457f",.06,.68));
-   rim.rotation.x=Math.PI/2;rim.position.y=.39;g.add(rim);
-   const face=new THREE.Mesh(new THREE.CircleGeometry(.53,28),material(own?"#e8313e":"#428ada",.02,.78));
-   face.position.set(0,.39,.066);g.add(face);
-   const highlight=new THREE.Mesh(new THREE.CircleGeometry(.30,24),
-    new THREE.MeshBasicMaterial({color:own?"#ff5a63":"#75b2f3",transparent:true,opacity:.25,depthWrite:false}));
-   highlight.position.set(-.12,.53,.070);g.add(highlight);
-   const handle=new THREE.Mesh(new THREE.CylinderGeometry(.105,.12,.92,10),material("#d8a35f",.02,.7));
-   handle.position.set(.15,-.39,-.015);handle.rotation.z=.24;g.add(handle);
-   const handleTip=new THREE.Mesh(new THREE.CylinderGeometry(.116,.116,.09,10),material("#a66d40",.02,.8));
-   handleTip.position.set(.25,-.83,-.015);handleTip.rotation.z=.24;g.add(handleTip);
-   // The court is narrowed for phones; keep the racket round while the
-   // distant opponent's racket reads smaller in this perspective.
+   // A tapered oval blade joins a long wood handle angled away from the blade.
+   // The handle clears the near table edge instead of disappearing beneath it.
+   const blade=new THREE.Shape();
+   blade.moveTo(0,-.34);
+   blade.bezierCurveTo(-.18,-.30,-.45,-.13,-.55,.23);
+   blade.bezierCurveTo(-.67,.90,-.34,1.42,0,1.45);
+   blade.bezierCurveTo(.34,1.42,.67,.90,.55,.23);
+   blade.bezierCurveTo(.45,-.13,.18,-.30,0,-.34);
+   const rim=new THREE.Mesh(new THREE.ExtrudeGeometry(blade,{depth:.11,bevelEnabled:true,
+    bevelThickness:.025,bevelSize:.025,bevelSegments:2,curveSegments:12}),
+    material(own?"#623541":"#2c426b",.03,.67));
+   rim.position.z=-.08;g.add(rim);
+   const face=new THREE.Mesh(new THREE.ShapeGeometry(blade,16),
+    material(own?"#e63844":"#3988d4",.02,.83));
+   face.scale.set(.94,.94,1);face.position.set(0,.025,.07);g.add(face);
+   const woodMaterial=material("#d9a264",.02,.72);
+   const gripMaterial=material("#a56b3e",.02,.78);
+   // The handle is held above the tabletop, including its near edge.
+   woodMaterial.depthTest=false;woodMaterial.depthWrite=false;
+   gripMaterial.depthTest=false;gripMaterial.depthWrite=false;
+   const neck=new THREE.Mesh(new THREE.BoxGeometry(.27,.35,.19),woodMaterial);
+   neck.position.set(0,-.43,.08);neck.renderOrder=1;g.add(neck);
+   const handle=new THREE.Group();handle.position.set(.20,-.85,.12);
+   handle.rotation.z=.34;g.add(handle);
+   const wood=new THREE.Mesh(new THREE.CylinderGeometry(.115,.14,1.31,12),
+    woodMaterial);wood.renderOrder=1;handle.add(wood);
+   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.124,.14,.48,12),
+    gripMaterial);grip.position.y=-.42;grip.renderOrder=2;handle.add(grip);
    const size=own?.78:.55;
    g.scale.set(size/.68,size,size);
    return g;
   };
   const me=buildPaddle(true),them=buildPaddle(false);
   paddles[side]=me;paddles[side===0?1:0]=them;scene.add(me,them);
-  // The far opponent stays visible. The near player is represented by the
-  // racket in this camera; avatars never affect the multiplayer physics.
-  const nearAvatar=arenaAvatar(side),farAvatar=arenaAvatar(side===0?1:0);
-  nearAvatar.group.position.set(-2.65,-.55,2.25);
-  nearAvatar.group.rotation.y=2.25;
-  nearAvatar.group.scale.setScalar(.64);
-  nearAvatar.group.visible=false;
-  farAvatar.group.position.set(0,-.55,-5.95);
-  farAvatar.group.scale.setScalar(.93);
-  scene.add(nearAvatar.group,farAvatar.group);
   const ball=new THREE.Mesh(new THREE.SphereGeometry(.132,12,8),
    new THREE.MeshStandardMaterial({color:"#ffffff",roughness:.18,emissive:"#d1b9ff",emissiveIntensity:.15}));
   scene.add(ball);
@@ -209,17 +163,6 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    if(!alive)return;
    raf=requestAnimationFrame(frame);
    const dt=Math.min((now-previous)/1000,.06);previous=now;
-   // Lightweight character reactions: opponents celebrate on a miss, the
-   // local player celebrates a win or slumps on a loss.
-   for(const [i,avatar] of [nearAvatar,farAvatar].entries()){
-    const who=i===0?resultRef.current:(resultRef.current==="win"?"lose":resultRef.current==="lose"?"win":"draw");
-    const win=who==="win",lose=who==="lose";
-    avatar.group.position.y=-.55+(win?.18+Math.abs(Math.sin(now*.010))*.14:lose?-.11:Math.sin(now*.0018+i)*.035);
-    avatar.head.rotation.x=lose?.26:win?-.14:Math.sin(now*.0015+i)*.04;
-    avatar.head.rotation.z=lose?(i===0?.15:-.15):Math.sin(now*.0011+i)*.025;
-    avatar.hands.forEach((hand,k)=>{hand.position.y=win?1.03+Math.sin(now*.009+k)*.10:lose?.58:.71+Math.sin(now*.003+k)*.06;});
-    avatar.mouth.scale.y=lose?.2:win?1.6:1;
-   }
    const next=latest.current;
    const gap=Math.hypot(next.ball.x-smooth.x,next.ball.y-smooth.y);
    const blend=1-Math.exp(-19*dt);
@@ -229,9 +172,9 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    for(const player of [0,1] as const){
     smooth.paddles[player]=THREE.MathUtils.lerp(smooth.paddles[player],next.paddles[player],1-Math.exp(-24*dt));
     const sx=side===0?smooth.paddles[player]:1-smooth.paddles[player];
-    paddles[player].position.set((sx-.5)*5.0,.40,player===side?3.78:-3.78);
+    paddles[player].position.set((sx-.5)*5.0,.62,player===side?4.48:-4.48);
     paddles[player].rotation.z=(sx-.5)*-.12;
-    const power=player===side&&down?Math.min(1,(now-chargeLocalAt)/1500):(next.charge?.[player]??0);
+    const power=player===side&&down?Math.min(1,(now-chargeLocalAt)/MAX_SMASH_CHARGE_MS):(next.charge?.[player]??0);
     // Detect remote release using authoritative charge/shot updates. Both
     // players see the other paddle wind up and swing.
     if(player!==side){
@@ -246,7 +189,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
     // Follow the incoming ball's true simulated height during the strike.
     const edge=player===0?.05:.95;
     const near=Math.abs(next.ball.x-edge)<.22;
-    const targetY=near?Math.max(.34,Math.min(1.05,.32+(next.ball.h-.09)*2.0)):.40;
+    const targetY=near?Math.max(.56,Math.min(1.12,.54+(next.ball.h-.09)*2.0)):.62;
     paddles[player].position.y=THREE.MathUtils.lerp(paddles[player].position.y,
       targetY+power*.12+forward*.07,1-Math.exp(-15*dt));
     if(player===side){
