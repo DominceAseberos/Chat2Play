@@ -109,6 +109,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   const camera=new THREE.PerspectiveCamera(42,1,.1,70);
   camera.position.set(.52,6.65,10.65);camera.lookAt(0,.12,.35);
   const smooth={x:.5,y:.5,h:.42,paddles:[.5,.5]},clock=new THREE.Clock();
+  const previousScreenX=[.5,.5],paddleLean=[0,0];
  // Transparent diminishing ball trail + future ballistic trajectory guide.
  const trail:Array<THREE.Mesh>=[];
  const trajectory:Array<THREE.Mesh>=[];
@@ -136,13 +137,18 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   resize();const observer=new ResizeObserver(resize);observer.observe(host);
   const toView=(x:number,y:number)=>side===0?{x:y,y:1-x}:{x:1-y,y:x};
   let raf=0,alive=true,previous=performance.now(),lastSent=0,down=false,id=-1;
+  let lastInputX:number|null=null,lastInputAt=0,localLean=0;
   function input(event:PointerEvent){
    if(!activeRef.current||!host)return;
    const rect=host.getBoundingClientRect();
    // x controls physical paddle position; no controls on vertical axis.
    const fraction=Math.max(0,Math.min(1,(event.clientX-rect.left)/Math.max(rect.width,1)));
+   const now=performance.now();
+   if(lastInputX!==null)
+    localLean=THREE.MathUtils.clamp(-(fraction-lastInputX)*8,-.48,.48);
+   lastInputX=fraction;lastInputAt=now;
    const canonical=side===0?fraction:1-fraction;
-   if(performance.now()-lastSent>25){lastSent=performance.now();send.current(canonical);}
+   if(now-lastSent>25){lastSent=now;send.current(canonical);}
   }
   const onDown=(e:PointerEvent)=>{
    if(!activeRef.current)return;
@@ -153,6 +159,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   const onUp=(e:PointerEvent)=>{
    if(e.pointerId===id){
     down=false;id=-1;smashAt=performance.now();chargeLocalAt=0;
+    lastInputX=null;localLean=0;
     if(host.hasPointerCapture(e.pointerId))host.releasePointerCapture(e.pointerId);
     if(activeRef.current)chargeCallback.current(false);
    }
@@ -173,7 +180,15 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
     smooth.paddles[player]=THREE.MathUtils.lerp(smooth.paddles[player],next.paddles[player],1-Math.exp(-24*dt));
     const sx=side===0?smooth.paddles[player]:1-smooth.paddles[player];
     paddles[player].position.set((sx-.5)*5.0,.62,player===side?4.48:-4.48);
-    paddles[player].rotation.z=(sx-.5)*-.12;
+    // Lean into the actual travel direction, then return upright at rest.
+    // Positive Z rotation moves the top of the blade left on screen.
+    const horizontalSpeed=(sx-previousScreenX[player])/Math.max(dt,.001);
+    previousScreenX[player]=sx;
+    const targetLean=player===side
+     ?(down&&now-lastInputAt<350?localLean:0)
+     :THREE.MathUtils.clamp(-horizontalSpeed*.45,-.48,.48);
+    paddleLean[player]=THREE.MathUtils.lerp(paddleLean[player],targetLean,1-Math.exp(-26*dt));
+    paddles[player].rotation.z=paddleLean[player];
     const power=player===side&&down?Math.min(1,(now-chargeLocalAt)/MAX_SMASH_CHARGE_MS):(next.charge?.[player]??0);
     // Detect remote release using authoritative charge/shot updates. Both
     // players see the other paddle wind up and swing.
@@ -184,7 +199,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
     const swing=player===side?Math.max(0,1-(now-smashAt)/430):
       Math.max(0,1-(now-remoteSmashAt)/430);
     const forward=swing>0?Math.sin(Math.PI*swing)*.92:0;
-    const target=power*.70-forward;
+    const target=power*.24-forward;
     paddles[player].rotation.x=THREE.MathUtils.lerp(paddles[player].rotation.x,target,1-Math.exp(-24*dt));
     // Follow the incoming ball's true simulated height during the strike.
     const edge=player===0?.05:.95;
@@ -198,6 +213,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
       host!.dataset.swinging=swing>0?"true":"false";
     }
     host!.dataset[player===side?"selfPaddleX":"opponentPaddleX"]=sx.toFixed(3);
+    host!.dataset[player===side?"selfPaddleTilt":"opponentPaddleTilt"]=paddleLean[player].toFixed(3);
    }
    const projected=toView(smooth.x,smooth.y);
    const worldX=(projected.x-.5)*5.0;
