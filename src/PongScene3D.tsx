@@ -114,25 +114,34 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   // Table side light strips.
   for(const x of [-2.65,2.65])box(.075,.07,8.3,"#71e7fa",x,-.08,0);
   const paddles=[new THREE.Group(),new THREE.Group()];
-  const buildPaddle=(color:string,own:boolean)=>{
+  const buildPaddle=(own:boolean)=>{
    const g=new THREE.Group();
-   const core=new THREE.Mesh(new THREE.BoxGeometry(1.20,.21,.35),material(color,.18,.27));
-   g.add(core);
-   const edge=new THREE.Mesh(new THREE.BoxGeometry(1.24,.06,.38),
-    new THREE.MeshBasicMaterial({color:own?"#ffe4c2":"#d8cbff"}));
-   edge.position.y=.14;g.add(edge);
-   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.085,.10,.42,7),material("#f2cd9f"));
-   grip.position.set(0,-.12,.24);grip.rotation.x=Math.PI/2;g.add(grip);
+   const rim=new THREE.Mesh(new THREE.CylinderGeometry(.57,.57,.12,28),material(own?"#7d202d":"#27457f",.06,.68));
+   rim.rotation.x=Math.PI/2;rim.position.y=.39;g.add(rim);
+   const face=new THREE.Mesh(new THREE.CircleGeometry(.53,28),material(own?"#e8313e":"#428ada",.02,.78));
+   face.position.set(0,.39,.066);g.add(face);
+   const highlight=new THREE.Mesh(new THREE.CircleGeometry(.30,24),
+    new THREE.MeshBasicMaterial({color:own?"#ff5a63":"#75b2f3",transparent:true,opacity:.25,depthWrite:false}));
+   highlight.position.set(-.12,.53,.070);g.add(highlight);
+   const handle=new THREE.Mesh(new THREE.CylinderGeometry(.105,.12,.92,10),material("#d8a35f",.02,.7));
+   handle.position.set(.15,-.39,-.015);handle.rotation.z=.24;g.add(handle);
+   const handleTip=new THREE.Mesh(new THREE.CylinderGeometry(.116,.116,.09,10),material("#a66d40",.02,.8));
+   handleTip.position.set(.25,-.83,-.015);handleTip.rotation.z=.24;g.add(handleTip);
+   // The court is narrowed for phones; keep the racket round while the
+   // distant opponent's racket reads smaller in this perspective.
+   const size=own?.78:.55;
+   g.scale.set(size/.68,size,size);
    return g;
   };
-  const me=buildPaddle("#ffa281",true),them=buildPaddle("#ac91ff",false);
+  const me=buildPaddle(true),them=buildPaddle(false);
   paddles[side]=me;paddles[side===0?1:0]=them;scene.add(me,them);
-  // Both characters are visual-only: far opponent and near-side player.
-  // Their poses never modify the multiplayer paddle or ball coordinates.
+  // The far opponent stays visible. The near player is represented by the
+  // racket in this camera; avatars never affect the multiplayer physics.
   const nearAvatar=arenaAvatar(side),farAvatar=arenaAvatar(side===0?1:0);
   nearAvatar.group.position.set(-2.65,-.55,2.25);
   nearAvatar.group.rotation.y=2.25;
   nearAvatar.group.scale.setScalar(.64);
+  nearAvatar.group.visible=false;
   farAvatar.group.position.set(0,-.55,-5.95);
   farAvatar.group.scale.setScalar(.93);
   scene.add(nearAvatar.group,farAvatar.group);
@@ -144,7 +153,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    new THREE.MeshBasicMaterial({color:"#111039",transparent:true,opacity:.28,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;shadow.position.y=.193;scene.add(shadow);
   const camera=new THREE.PerspectiveCamera(42,1,.1,70);
-  camera.position.set(0,7.95,10.5);camera.lookAt(0,.12,0);
+  camera.position.set(.52,6.65,10.65);camera.lookAt(0,.12,.35);
   const smooth={x:.5,y:.5,h:.42,paddles:[.5,.5]},clock=new THREE.Clock();
  // Transparent diminishing ball trail + future ballistic trajectory guide.
  const trail:Array<THREE.Mesh>=[];

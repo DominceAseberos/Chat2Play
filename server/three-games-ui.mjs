@@ -41,6 +41,8 @@ for(const [width,height] of pairs){
   await Promise.all([sceneA.waitFor(),sceneB.waitFor()]);
   await Promise.all([a.waitForFunction(()=>document.querySelector(".pong-scene-3d")?.dataset.renderer==="three",{},{timeout:14000}),
    b.waitForFunction(()=>document.querySelector(".pong-scene-3d")?.dataset.renderer==="three",{},{timeout:14000})]);
+  await Promise.all([da.locator(".pong-load-screen").waitFor({state:"hidden",timeout:14000}),
+   db.locator(".pong-load-screen").waitFor({state:"hidden",timeout:14000})]);
   const values=await Promise.all([sceneA.evaluate(el=>({calls:Number(el.dataset.drawCalls),canvasCount:el.querySelectorAll("canvas").length,
    width:el.clientWidth,height:el.clientHeight,me:el.dataset.selfPaddleX,opponent:el.dataset.opponentPaddleX,side:el.dataset.perspective})),
    sceneB.evaluate(el=>({calls:Number(el.dataset.drawCalls),canvasCount:el.querySelectorAll("canvas").length,
@@ -60,7 +62,7 @@ for(const [width,height] of pairs){
  finally{await Promise.all(contexts.map(c=>c.close()));}
 }
 // Rock Paper Scissors pairs
-for(const [width,height] of [[320,568],[390,844],[768,1024]].filter(([width])=>!onlyWidth||String(width)===onlyWidth)){
+if(process.env.C2P_ONLY_GAME!=="pong")for(const [width,height] of [[320,568],[390,844],[768,1024]].filter(([width])=>!onlyWidth||String(width)===onlyWidth)){
  const ctx=await joined([width,height]);
  const {a,b,contexts,errors}=ctx;
  try{
