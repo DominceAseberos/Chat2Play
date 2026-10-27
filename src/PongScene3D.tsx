@@ -137,16 +137,19 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   resize();const observer=new ResizeObserver(resize);observer.observe(host);
   const toView=(x:number,y:number)=>side===0?{x:y,y:1-x}:{x:1-y,y:x};
   let raf=0,alive=true,previous=performance.now(),lastSent=0,down=false,id=-1;
-  let lastInputX:number|null=null,lastInputAt=0,localLean=0;
+  let lastInputX:number|null=null,localLeanMomentum=0;
   function input(event:PointerEvent){
    if(!activeRef.current||!host)return;
    const rect=host.getBoundingClientRect();
    // x controls physical paddle position; no controls on vertical axis.
    const fraction=Math.max(0,Math.min(1,(event.clientX-rect.left)/Math.max(rect.width,1)));
    const now=performance.now();
+   // Accumulate a small directional impulse. Frame damping makes it settle
+   // naturally even when pointer events arrive at uneven intervals.
    if(lastInputX!==null)
-    localLean=THREE.MathUtils.clamp(-(fraction-lastInputX)*8,-.48,.48);
-   lastInputX=fraction;lastInputAt=now;
+    localLeanMomentum=THREE.MathUtils.clamp(
+     localLeanMomentum-(fraction-lastInputX)*4.5,-.38,.38);
+   lastInputX=fraction;
    const canonical=side===0?fraction:1-fraction;
    if(now-lastSent>25){lastSent=now;send.current(canonical);}
   }
@@ -159,7 +162,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   const onUp=(e:PointerEvent)=>{
    if(e.pointerId===id){
     down=false;id=-1;smashAt=performance.now();chargeLocalAt=0;
-    lastInputX=null;localLean=0;
+    lastInputX=null;
     if(host.hasPointerCapture(e.pointerId))host.releasePointerCapture(e.pointerId);
     if(activeRef.current)chargeCallback.current(false);
    }
@@ -170,6 +173,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    if(!alive)return;
    raf=requestAnimationFrame(frame);
    const dt=Math.min((now-previous)/1000,.06);previous=now;
+   localLeanMomentum*=Math.exp(-(down?2.5:10)*dt);
    const next=latest.current;
    const gap=Math.hypot(next.ball.x-smooth.x,next.ball.y-smooth.y);
    const blend=1-Math.exp(-19*dt);
@@ -184,10 +188,9 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
     // Positive Z rotation moves the top of the blade left on screen.
     const horizontalSpeed=(sx-previousScreenX[player])/Math.max(dt,.001);
     previousScreenX[player]=sx;
-    const targetLean=player===side
-     ?(down&&now-lastInputAt<350?localLean:0)
-     :THREE.MathUtils.clamp(-horizontalSpeed*.45,-.48,.48);
-    paddleLean[player]=THREE.MathUtils.lerp(paddleLean[player],targetLean,1-Math.exp(-26*dt));
+    const targetLean=player===side?localLeanMomentum:
+     THREE.MathUtils.clamp(-horizontalSpeed*.32,-.38,.38);
+    paddleLean[player]=THREE.MathUtils.lerp(paddleLean[player],targetLean,1-Math.exp(-14*dt));
     paddles[player].rotation.z=paddleLean[player];
     const power=player===side&&down?Math.min(1,(now-chargeLocalAt)/MAX_SMASH_CHARGE_MS):(next.charge?.[player]??0);
     // Detect remote release using authoritative charge/shot updates. Both

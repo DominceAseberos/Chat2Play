@@ -68,14 +68,20 @@ for(const [width,height] of pairs){
     min=Math.min(min,tilt);max=Math.max(max,tilt);
     if(i===6)await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/test-3d-pong-"+width+"-tilt-"+direction+".png"});
    }
-   await a.mouse.up();
-   return {min,max};
+   const beforeRelease=Number(await sceneA.getAttribute("data-self-paddle-tilt"));
+   await a.mouse.up();await a.waitForTimeout(60);
+   const afterRelease=Number(await sceneA.getAttribute("data-self-paddle-tilt"));
+   return {min,max,beforeRelease,afterRelease};
   };
   const right=await dragAndMeasure(.18,.82,"right");
   assert.ok(right.min<-.08,"Paddle should lean right while moving right: "+JSON.stringify(right));
+  assert.ok(Math.abs(right.afterRelease)<Math.abs(right.beforeRelease)+.01,
+   "Right lean should ease back after release: "+JSON.stringify(right));
   await a.waitForTimeout(350);
   const left=await dragAndMeasure(.82,.18,"left");
   assert.ok(left.max>.08,"Paddle should lean left while moving left: "+JSON.stringify(left));
+  assert.ok(Math.abs(left.afterRelease)<Math.abs(left.beforeRelease)+.01,
+   "Left lean should ease back after release: "+JSON.stringify(left));
   await a.waitForTimeout(500);
   assert.ok(Math.abs(Number(await sceneA.getAttribute("data-self-paddle-tilt")))<.05,"Paddle should return upright when still");
   console.log("PASS 3D Pong",width,height,JSON.stringify({views:values,right,left}));
