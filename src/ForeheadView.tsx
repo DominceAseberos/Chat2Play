@@ -8,13 +8,13 @@ import "./forehead.css";
 
 type Props={
  game:Game;side:Side;socket:Socket;messages:ChatMessage[];chatEnabled:boolean;onChatSend:(text:string)=>void;
- onClose:()=>void;onMinimize:()=>void;onReplay:(kind:Kind)=>void;
+ onClose:()=>void;onMinimize:()=>void;onReplay:(kind:Kind)=>void;questionPending:boolean;
  onAsk:(category:string)=>void;onAnswer:(id:number,yes:boolean)=>void;
  onGuess:(word:string)=>void;onSkip:()=>void;onHeardCorrect:()=>void;onGesture:(yes:boolean)=>void;onChatAnswer:(questionId:string,yes:boolean)=>void;
 };
 type FloatingMessage={id:string;from:Side;kind:"chat"|"hint"|"guess";text:string;at:number};
 const other=(side:Side):Side=>side===0?1:0;
-export default function ForeheadView({game,side,socket,messages,chatEnabled,onChatSend,onClose,onMinimize,onReplay,onAsk,onAnswer,onGuess,onSkip,onChatAnswer,onHeardCorrect,onGesture}:Props){
+export default function ForeheadView({game,side,socket,messages,chatEnabled,onChatSend,onClose,onMinimize,onReplay,questionPending,onAsk,onAnswer,onGuess,onSkip,onChatAnswer,onHeardCorrect,onGesture}:Props){
  const state=game.forehead;
  const [text,setText]=useState("");
  const [chatDraft,setChatDraft]=useState("");
@@ -196,7 +196,7 @@ export default function ForeheadView({game,side,socket,messages,chatEnabled,onCh
      <small>Tap Correct only when you hear the exact forehead word.</small>
     </div>}
     {finished&&<div className="henyo-finished-actions">
-     <button type="button" className="forehead-rematch" onClick={()=>onReplay("forehead")}><Gamepad2 size={17}/> Rematch <ArrowRight size={16}/></button>
+     <button type="button" className="forehead-rematch" onClick={questionPending?onMinimize:()=>onReplay("forehead")}><Gamepad2 size={17}/> {questionPending?game.winner===side?"Ask in chat":"Answer in chat":"Rematch"} <ArrowRight size={16}/></button>
      <button type="button" className="forehead-result-close" onClick={onClose}><X size={16}/> Close</button>
     </div>}
     {notice&&<p className="henyo-local-notice" role="status">{notice}</p>}

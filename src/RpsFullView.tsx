@@ -9,9 +9,9 @@ import "./rps-full.css";
 const RpsScene3D=lazy(()=>import("./RpsScene3D"));
 
 type Props={game:Game;side:Side;onMove:(choice:Choice)=>void;onReady:()=>void;
- onBack:()=>void;onClose:()=>void;onReplay:()=>void};
+ onBack:()=>void;onClose:()=>void;onReplay:()=>void;questionPending:boolean};
 
-export default function RpsFullView({game,side,onMove,onReady,onBack,onClose,onReplay}:Props){
+export default function RpsFullView({game,side,onMove,onReady,onBack,onClose,onReplay,questionPending}:Props){
  const [view,setView]=useState<"pov"|"arena">("pov");
  const [selected,setSelected]=useState<Choice|null>(null);
  const [clockNow,setClockNow]=useState(Date.now());
@@ -109,9 +109,9 @@ export default function RpsFullView({game,side,onMove,onReady,onBack,onClose,onR
     <span>Partner: <b>{game.reveal.choices[other]??"No move"}</b></span>
    </div>}
    {game.phase==="finished"&&<div className="rps-full-finish"><Trophy size={18}/><span>{game.winner===side?"You won the match!":"Match complete"}</span>
-    {rematch?.accepted[side]?<small>Waiting for partner · {rematchSeconds}s</small>:
+    {questionPending?<small>{game.winner===side?"Ask your question before a rematch":"Answer the winner's question before a rematch"}</small>:rematch?.accepted[side]?<small>Waiting for partner · {rematchSeconds}s</small>:
      <button type="button" onClick={onReplay}><Gamepad2 size={15}/>{rematch?`Accept rematch · ${rematchSeconds}s`:"Request rematch"}</button>}
-    <button type="button" className="rps-finish-back" onClick={onBack}><ArrowLeft size={15}/> Back to chat</button></div>}
+    <button type="button" className="rps-finish-back" onClick={onBack}><ArrowLeft size={15}/> {questionPending?game.winner===side?"Ask in chat":"Answer in chat":"Back to chat"}</button></div>}
    {game.phase==="playing"&&<div className="rps-full-choices rps-grid" aria-label="Choose a rock paper scissors move">
     {(["rock","paper","scissors"] as Choice[]).map(choice=><button type="button" className="rps-tile" key={choice}
       onClick={()=>{setSelected(choice);onMove(choice);}} aria-label={`Choose ${choice}`} aria-pressed={selected===choice}

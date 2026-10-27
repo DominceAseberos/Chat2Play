@@ -8,9 +8,10 @@ import {lazy,Suspense} from "react";
 const ForeheadView=lazy(()=>import("./ForeheadView"));
 const RpsFullView=lazy(()=>import("./RpsFullView"));
 import MatchMorph from "./MatchMorph";
+import WinnerQuestionCard from "./WinnerQuestionCard";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, ArrowRight, BadgeCheck, Check, CheckCheck, ChevronRight, CircleHelp, Clock3, Gamepad2, Heart, Image, LockKeyhole, Menu, MessageCircle, Mic, Moon, MoreHorizontal, RotateCcw, Send, Settings2, ShieldCheck, Shuffle, Smile, Sparkles, Sun, UserRound, Users, WifiOff, X } from "lucide-react";
-import { ChatSkeleton, FancySelect, GamePanel, GameSymbol, GAMES, GENDERS, genderText, Logo, Modal, PREFS, ReactionPicker, Spinner, StickerArt, TypingIndicator, type ChatMessage, type Game, type Gender, type Kind, type Preference, type Side, type Sticker, type Theme } from "./Pieces";
+import { ArrowLeft, ArrowRight, BadgeCheck, Check, CheckCheck, ChevronRight, CircleHelp, Clock3, Gamepad2, Heart, Image, LockKeyhole, Menu, MessageCircle, Mic, Moon, MoreHorizontal, RotateCcw, Send, Settings2, ShieldCheck, Shuffle, Smile, Sparkles, Sun, Trophy, UserRound, Users, WifiOff, X } from "lucide-react";
+import { ChatSkeleton, FancySelect, GamePanel, GameSymbol, GAMES, GENDERS, genderText, Logo, Modal, PREFS, ReactionPicker, Spinner, StickerArt, TypingIndicator, type ChatMessage, type Game, type Gender, type Kind, type Preference, type Side, type Sticker, type Theme, type WinnerQuestionState } from "./Pieces";
 
 type Mode = "home" | "searching" | "matched" | "chat" | "ended";
 type Like = { yours: boolean; theirs: boolean; mutual: boolean };
@@ -48,6 +49,7 @@ function App(){
  const [matchType,setMatchType]=useState<"preferred"|"fallback">("preferred");
  const [messages,setMessages]=useState<ChatMessage[]>([]);
  const [game,setGame]=useState<Game|null>(null);
+ const [winnerQuestion,setWinnerQuestion]=useState<WinnerQuestionState|null>(null);
  const [likes,setLikes]=useState<Like>(initialLike);
  const [draft,setDraft]=useState("");
  const [partnerTyping,setPartnerTyping]=useState(false);
@@ -154,7 +156,7 @@ function App(){
    followLatestMessage.current=true;
    setSide(m.side);setPartnerGender(m.partnerGender);setCommonGames(m.commonGames);setMatchType(m.matchType==="fallback"?"fallback":"preferred");setMessages([]);
    cancelFound();activeMatch.current=true;
-   setGame(null);setLikes(initialLike);setPartnerTyping(false);setPartnerConnected(true);setPartnerAway(false);setEndedReason("");setMode("matched");
+   setGame(null);setWinnerQuestion(null);setLikes(initialLike);setPartnerTyping(false);setPartnerConnected(true);setPartnerAway(false);setEndedReason("");setMode("matched");
    setPendingJoin(false);setPickerOpen(false);setGamesOpen(false);setNotice("");
    matchTimer.current=setTimeout(()=>{
      matchTimer.current=undefined;
@@ -163,7 +165,7 @@ function App(){
   };
   const onEnd=(m:{reason:string})=>{
    cancelFound();
-   setGame(null);setPartnerTyping(false);setLikes(initialLike);setPickerOpen(false);
+   setGame(null);setWinnerQuestion(null);setPartnerTyping(false);setLikes(initialLike);setPickerOpen(false);
    setGamesOpen(false);setArcadeOpen(false);setPartnerConnected(false);
    setEndedReason(m.reason);
    setMode(prev=>prev==="searching"||prev==="home"?prev:"ended");
@@ -178,6 +180,7 @@ function App(){
    setPartnerTyping(false);typingRef.current=false;
   };
   const onGame=(g:Game|null)=>{setGame(g);if(!g)setQuitGameId(null);};
+  const onWinnerQuestion=(state:WinnerQuestionState)=>{setWinnerQuestion(state);if(state.question){setGamesOpen(false);setPickerOpen(false);}};
   const onGameClosed=(closed:{id:string;kind:Kind;bySelf:boolean})=>{
    const name=GAMES.find(g=>g.id===closed.kind)?.title??"the game";
    setQuitGameId(null);
@@ -200,7 +203,7 @@ function App(){
   };
   const onPartnerConnection=(data:{connected:boolean})=>{setPartnerConnected(data.connected);if(!data.connected){setPartnerAway(false);setPartnerTyping(false);setArcadeOpen(false);}};
   const onPartnerActivity=(data:{away:boolean})=>{setPartnerAway(data.away);if(data.away)setPartnerTyping(false);};
-  const onSessionLost=()=>{setEndedReason("Your previous chat expired while you were offline.");setMode(current=>current==="chat"||current==="matched"?"ended":"home");};
+  const onSessionLost=()=>{setWinnerQuestion(null);setEndedReason("Your previous chat expired while you were offline.");setMode(current=>current==="chat"||current==="matched"?"ended":"home");};
   const onSessionState=(data:{phase:string;side:Side;partnerGender:Gender;commonGames:Kind[];matchType:"preferred"|"fallback"})=>{
     if(data.phase!=="chat")return;
     setSide(data.side);setPartnerGender(data.partnerGender);setCommonGames(data.commonGames);setMatchType(data.matchType);
@@ -214,6 +217,7 @@ function App(){
   socket.on("chat:message",onChat);socket.on("chat:typing",onTyping);
   socket.on("partner:connection",onPartnerConnection);socket.on("partner:activity",onPartnerActivity);socket.on("session:state",onSessionState);socket.on("session:lost",onSessionLost);
   socket.on("game:state",onGame);socket.on("game:closed",onGameClosed);socket.on("rps:rematch-ended",onRpsRematchEnded);socket.on("like:state",onLike);
+  socket.on("winner-question:state",onWinnerQuestion);
   socket.on("system:error",onError);socket.on("system:notice",onError);
   socket.connect();
   return ()=>{
@@ -222,6 +226,7 @@ function App(){
    socket.off("chat:message",onChat);socket.off("chat:typing",onTyping);
    socket.off("partner:connection",onPartnerConnection);socket.off("partner:activity",onPartnerActivity);socket.off("session:state",onSessionState);socket.off("session:lost",onSessionLost);
    socket.off("game:state",onGame);socket.off("game:closed",onGameClosed);socket.off("rps:rematch-ended",onRpsRematchEnded);socket.off("like:state",onLike);
+   socket.off("winner-question:state",onWinnerQuestion);
    socket.off("system:error",onError);socket.off("system:notice",onError);
    cancelFound();
    socket.disconnect();if(stopTyping.current)clearTimeout(stopTyping.current);if(typingClear.current)clearTimeout(typingClear.current);
@@ -248,7 +253,7 @@ function App(){
  function leave(){
   activeMatch.current=false;if(matchTimer.current)clearTimeout(matchTimer.current);
   if(socket.connected)socket.emit(mode==="searching"?"queue:cancel":"match:leave");
-  setMode("home");setHomeStep(setupCompleted?3:0);setMessages([]);setGame(null);setPickerOpen(false);
+  setMode("home");setHomeStep(setupCompleted?3:0);setMessages([]);setGame(null);setWinnerQuestion(null);setPickerOpen(false);
   setGamesOpen(false);setPongPreselectOpen(false);setPartnerTyping(false);setNextConfirm(false);setNotice("");
  }
  function next(){
@@ -256,12 +261,13 @@ function App(){
   if(mode==="ended"){setNextConfirm(false);join();return;}
   activeMatch.current=false;if(matchTimer.current)clearTimeout(matchTimer.current);
   setNextConfirm(false);setPickerOpen(false);setGamesOpen(false);setPongPreselectOpen(false);
-  setMode("searching");setMessages([]);setGame(null);setPartnerTyping(false);
+  setMode("searching");setMessages([]);setGame(null);setWinnerQuestion(null);setPartnerTyping(false);
   socket.emit("match:next",{gender,lookingFor,interests,fallback,isAdult:adult});
  }
  function requestNext(){if(autoConfirmNext)next();else setNextConfirm(true);}
  function inviteToGame(kind:Kind,targetPoints?:5|10){
   if(!canChat||(game&&(game.phase!=="finished"||game.rps?.rematch)))return;
+  if(winnerQuestion?.question){setNotice("Finish the winner's question before starting another game.");return;}
   if(kind==="pong"&&targetPoints===undefined){setPongPreselectOpen(true);return;}
   // Close the game picker as soon as a game is chosen.
   // The synchronized invitation remains visible in the chat.
@@ -331,7 +337,7 @@ function App(){
   });
  }
  function sendPayload(payload:Omit<ChatMessage,"id"|"from"|"at"|"pending">){
-  if(mode!=="chat"||!socket.connected||!partnerConnected)return;
+  if(mode!=="chat"||!socket.connected||!partnerConnected||winnerQuestion?.question)return;
   const id=crypto.randomUUID();
   followLatestMessage.current=true;
   setMessages(prev=>[...prev,{...payload,id,from:side,at:Date.now(),pending:true}].slice(-250));
@@ -349,9 +355,18 @@ function App(){
  }
  function sendEmoji(emoji:string){setDraft(s=>s+emoji);draftRef.current?.focus();}
  function onReport(reason:string){if(!socket.connected){setNotice("Reconnect before submitting a report.");setReportOpen(false);return;}socket.emit("report:send",{reason});setReportOpen(false);setMode("home");setNotice("Report submitted to this demo. Human moderation is not enabled.");}
+ function winnerQuestionAction(action:"ask"|"answer"|"skip",text:string):Promise<string|undefined>{
+  const id=winnerQuestion?.question?.id;
+  if(!id||!socket.connected)return Promise.resolve("Reconnect to continue this question.");
+  return new Promise(resolve=>socket.timeout(5000).emit(`winner-question:${action}`,
+   action==="skip"?{id}:{id,text},
+   (err:Error|null,result?:{ok:boolean;error?:string})=>resolve(err?"Connection timed out. Try again.":
+    result?.ok?undefined:result?.error??"Try again.")));
+ }
  const canFind=adult&&connected&&!pendingJoin;
  const allGamesSelected=interests.length===GAMES.length;
  const canChat=connected&&partnerConnected;
+ const questionActive=Boolean(winnerQuestion?.question);
 
  return <div className="c2p-app" onPointerDown={unlockTypingAudio}>
   <header className="topbar">
@@ -444,8 +459,8 @@ function App(){
       </div>
      </div>
      {game?.kind==="rps"&&!arcadeOpen&&(game.phase==="loading"||game.phase==="playing"||game.phase==="finished")&&
-      <button type="button" className="rps-return-to-game" onClick={()=>setArcadeOpen(true)}>
-       <Gamepad2 size={17}/><span>{game.rps?.rematch?game.rps.rematch.accepted[side]?"Waiting for your partner to accept the rematch":"Your partner requested a rematch":game.phase==="finished"?"Rock Paper Scissors is complete":game.rps?.pausedBy?.[side]?"Game paused while you're in chat":game.rps?.pausedBy?.some(Boolean)?"Game paused · Partner is outside":"Rock Paper Scissors is in progress"}</span><strong>Return to game</strong><ArrowRight size={16}/>
+      <button type="button" className="rps-return-to-game" onClick={()=>questionActive?setArcadeOpen(false):setArcadeOpen(true)}>
+       <Gamepad2 size={17}/><span>{questionActive?"Winner's question is ready in chat":game.rps?.rematch?game.rps.rematch.accepted[side]?"Waiting for your partner to accept the rematch":"Your partner requested a rematch":game.phase==="finished"?"Rock Paper Scissors is complete":game.rps?.pausedBy?.[side]?"Game paused while you're in chat":game.rps?.pausedBy?.some(Boolean)?"Game paused · Partner is outside":"Rock Paper Scissors is in progress"}</span><strong>{questionActive?"Question below":"Return to game"}</strong><ArrowRight size={16}/>
       </button>}
      {temporaryHint&&<div className="temporary-top-hint" role="status"><LockKeyhole size={13}/> Messages disappear when this chat ends</div>}
      {!partnerConnected&&connected&&<div className="partner-connection-banner" role="status"><Spinner/> Stranger disconnected. Waiting briefly for reconnection...</div>}
@@ -458,14 +473,15 @@ function App(){
           {messages.map(m=><div className={"message-line"+(m.from===side?" mine":" theirs")} key={m.id}>
            {m.from!==side&&<span className="message-avatar"><UserRound size={15}/></span>}
            <div className="bubble-wrap">
-            <motion.div initial={reduceMotion?false:{opacity:0,scale:.94,y:5}} animate={{opacity:1,scale:1,y:0}} transition={{duration:.18}} className={"message-bubble"+(m.kind!=="text"?" rich-bubble":"")}>
-              {m.kind==="text"?<span>{m.text}</span>:m.kind==="sticker"&&m.sticker?<StickerArt id={m.sticker} size={88}/>:m.url?<img className="gif-message" src={m.url} alt="Animated GIF" loading="lazy" referrerPolicy="no-referrer"/>:null}
+            <motion.div initial={reduceMotion?false:{opacity:0,scale:.94,y:5}} animate={{opacity:1,scale:1,y:0}} transition={{duration:.18}} className={"message-bubble"+((m.kind==="gif"||m.kind==="sticker")?" rich-bubble":"")}>
+              {m.kind==="text"?<span>{m.text}</span>:m.kind==="winner-question"||m.kind==="winner-answer"||m.kind==="winner-skip"?<span className="winner-chat-bubble"><small>{m.kind==="winner-question"?"WINNER'S QUESTION":m.kind==="winner-answer"?"ANSWER":"SKIPPED"}</small><span>{m.text}</span></span>:m.kind==="sticker"&&m.sticker?<StickerArt id={m.sticker} size={88}/>:m.url?<img className="gif-message" src={m.url} alt="Animated GIF" loading="lazy" referrerPolicy="no-referrer"/>:null}
             </motion.div>
             {mobileLayout&&m.kind==="text"&&m.text&&m.text.length>180&&<button type="button" className="read-full-message" onClick={()=>{setExpandedMessage(m);setDetailPage(0);}}>Read full message <ChevronRight size={14}/></button>}
             <span className="message-meta">{formattedTime(m.at)}{m.from===side&&(m.pending?<Spinner/>:m.failed?<button type="button" className="retry-message" disabled={!canChat} onClick={()=>retryMessage(m)} title="Retry sending this message">Retry <RotateCcw size={12}/></button>:<CheckCheck size={13} aria-label="Sent"/>)}</span>
            </div>
           </div>)}
-          {game&&<div className="inline-game"><GamePanel game={game} side={side} onRespond={yes=>{if(canChat)socket.emit("game:respond",yes);}}
+          {game&&questionActive?<div className="winner-match-summary"><Trophy size={18}/><span><strong>{game.winner===side?"You won the match":game.winner==="draw"?"Match finished":"Your partner won the match"}</strong><small>The winner's question is below.</small></span></div>:null}
+          {game&&!questionActive&&<div className="inline-game"><GamePanel game={game} side={side} onRespond={yes=>{if(canChat)socket.emit("game:respond",yes);}}
             onCategoriesAgree={categories=>{if(canChat)socket.emit("forehead:categories:agree",{id:game.id,confirmed:true,categories});}}
             onCategoriesChange={()=>{if(canChat)socket.emit("forehead:categories:request-change",{id:game.id});}}
             onSetup={()=>{setHenyoCategoryStep(game.phase==="settings"?1:0);setHenyoSetupOpen(true);}} onMove={move=>{if(canChat)socket.emit("game:move",move);}} onClose={requestQuitGame} onExpand={()=>setArcadeOpen(true)}
@@ -473,20 +489,21 @@ function App(){
           <div ref={bottom}/>
         </div>
         <div className="composer-area">
+          {winnerQuestion?.question&&<WinnerQuestionCard state={winnerQuestion} side={side} connected={canChat} onAction={winnerQuestionAction}/>}
           <AnimatePresence>{pickerOpen&&<motion.div className="picker-holder" initial={reduceMotion?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:8}} transition={{duration:.16}}><div className="picker-heading"><strong>Express yourself</strong><button type="button" className="icon-button" aria-label="Close reactions" onClick={()=>setPickerOpen(false)}><X size={18}/></button></div>
             <ReactionPicker theme={theme} onEmoji={sendEmoji} onSticker={sticker=>sendPayload({kind:"sticker",sticker})} onGif={url=>sendPayload({kind:"gif",url})}/></motion.div>}</AnimatePresence>
-          <form className="composer" onSubmit={send}>
+          {!questionActive&&<form className="composer" onSubmit={send}>
             <button className={"composer-action"+(pickerOpen?" active":"")} type="button" aria-label="Choose emoji, GIF or sticker" title="Reactions" onClick={()=>setPickerOpen(v=>!v)}><span className="composer-plus">+</span></button>
             <textarea disabled={!canChat} ref={draftRef} aria-label="Message" placeholder="Type a message…" rows={1} value={draft} maxLength={500}
               onChange={e=>onDraft(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send(e as unknown as FormEvent);}}}/>
             <button className="send-button" type="submit" disabled={!draft.trim()||!canChat} aria-label="Send message"><Send size={19}/></button>
-          </form>
-          <div className="composer-footer"><button className="open-games-button" type="button" onClick={()=>{setGamesOpen(v=>!v);setPickerOpen(false);}}><Gamepad2 size={17}/><span>{gamesOpen?"Hide games":"Play a game"}</span><ChevronRight size={15}/></button><span><LockKeyhole size={13}/> Disappears when you leave</span></div><nav className="chat-dock" aria-label="Chat quick actions"><button type="button" className="dock-selected" onClick={()=>draftRef.current?.focus()} aria-label="Focus chat"><MessageCircle size={20}/><span>Chat</span></button><button type="button" onClick={()=>{setGamesOpen(true);setPickerOpen(false);}} aria-label="Open mini games"><Gamepad2 size={20}/><span>Games</span></button><button type="button" onClick={()=>setDetailsOpen(true)} aria-label="View current stranger"><UserRound size={20}/><span>Stranger</span></button><button type="button" onClick={()=>setSettingsOpen(true)} aria-label="Open appearance settings"><Settings2 size={20}/><span>Settings</span></button></nav>
+          </form>}
+          <div className="composer-footer"><button className="open-games-button" type="button" disabled={questionActive} onClick={()=>{setGamesOpen(v=>!v);setPickerOpen(false);}}><Gamepad2 size={17}/><span>{questionActive?"Answer to play again":gamesOpen?"Hide games":"Play a game"}</span><ChevronRight size={15}/></button><span><LockKeyhole size={13}/> Disappears when you leave</span></div><nav className="chat-dock" aria-label="Chat quick actions"><button type="button" className="dock-selected" onClick={()=>questionActive?document.querySelector<HTMLTextAreaElement>(".winner-question-card textarea")?.focus():draftRef.current?.focus()} aria-label="Focus chat"><MessageCircle size={20}/><span>Chat</span></button><button type="button" disabled={questionActive} onClick={()=>{setGamesOpen(true);setPickerOpen(false);}} aria-label="Open mini games"><Gamepad2 size={20}/><span>Games</span></button><button type="button" onClick={()=>setDetailsOpen(true)} aria-label="View current stranger"><UserRound size={20}/><span>Stranger</span></button><button type="button" onClick={()=>setSettingsOpen(true)} aria-label="Open appearance settings"><Settings2 size={20}/><span>Settings</span></button></nav>
         </div>
        </div>
        <aside className={"game-sidebar"+(gamesOpen?" game-sidebar-open":"")}>
-         <div className="sidebar-top"><span className="sidebar-kicker">PLAY & CONNECT</span><button type="button" className="sidebar-close icon-button" aria-label="Close games" onClick={()=>setGamesOpen(false)}><X size={19}/></button><h3>Break the ice <Gamepad2 size={20}/></h3><p>{game?.phase==="invite"?"Waiting for your partner to answer the invitation.":game?.phase==="categories"?"Both players must agree on the word categories.":game?.phase==="settings"?"Choosing difficulty and the timer.":game?.phase==="playing"?"Your game is currently in progress.":"Pick a game. Your partner chooses if they want to play."}</p></div>
-         {(!game||(game.phase==="finished"&&!game.rps?.rematch))&&
+         <div className="sidebar-top"><span className="sidebar-kicker">PLAY & CONNECT</span><button type="button" className="sidebar-close icon-button" aria-label="Close games" onClick={()=>setGamesOpen(false)}><X size={19}/></button><h3>Break the ice <Gamepad2 size={20}/></h3><p>{questionActive?"Finish the winner's question to play again.":game?.phase==="invite"?"Waiting for your partner to answer the invitation.":game?.phase==="categories"?"Both players must agree on the word categories.":game?.phase==="settings"?"Choosing difficulty and the timer.":game?.phase==="playing"?"Your game is currently in progress.":"Pick a game. Your partner chooses if they want to play."}</p></div>
+         {!questionActive&&(!game||(game.phase==="finished"&&!game.rps?.rematch))&&
           (pongPreselectOpen?<div className="pong-preselect rps-preselect">
            <button type="button" className="secondary-button" onClick={()=>setPongPreselectOpen(false)}>Back to games</button>
            <h4>Ping Pong match</h4>
@@ -514,7 +531,7 @@ function App(){
   <AnimatePresence>
    {mode==="chat"&&arcadeOpen&&game?.kind==="rps"&&(game.phase==="loading"||game.phase==="playing"||game.phase==="finished")&&
     <Suspense fallback={<div role="status" style={{position:"fixed",inset:0,zIndex:70,display:"grid",placeItems:"center",background:"#211b3b",color:"#fff",fontWeight:800}}>Loading Rock Paper Scissors…</div>}>
-     <RpsFullView key={game.id} game={game} side={side}
+     <RpsFullView key={game.id} game={game} side={side} questionPending={questionActive}
       onMove={choice=>{if(canChat)socket.emit("game:move",choice);}}
       onReady={()=>{if(canChat)socket.emit("rps:scene-ready",{id:game.id});socket.emit("rps:view",{id:game.id,viewing:true});}}
       onBack={backFromRps}
@@ -523,7 +540,7 @@ function App(){
    {mode==="chat"&&game?.kind==="forehead"&&(game.phase==="mic"||game.phase==="loading"||game.phase==="playing")&&
     <HenyoVoice key={"voice-"+game.id} game={game} side={side} socket={socket} onLeave={requestQuitGame}/>}
    {mode==="chat"&&arcadeOpen&&game&&game.kind==="forehead"&&(game.phase==="loading"||game.phase==="playing"||game.phase==="finished")&&<Suspense fallback={<div className="forehead-overlay" role="status" style={{color:"white",display:"grid",placeItems:"center"}}>Loading 3D game...</div>}>
-    <ForeheadView key={game.id} game={game} socket={socket} side={side} messages={messages} chatEnabled={canChat} onChatSend={text=>sendPayload({kind:"text",text})}
+    <ForeheadView key={game.id} game={game} socket={socket} side={side} messages={messages} chatEnabled={canChat} questionPending={questionActive} onChatSend={text=>sendPayload({kind:"text",text})}
       onAsk={category=>{if(canChat)socket.emit("forehead:ask",{category,round:game.forehead?.completed,serial:game.forehead?.wordSerial});}}
       onAnswer={(id,yes)=>{if(canChat)socket.emit("forehead:answer",{id,yes});}}
       onChatAnswer={(questionId,yes)=>{if(canChat)socket.emit("forehead:chat-answer",{
@@ -543,7 +560,7 @@ function App(){
       onReplay={inviteToGame}/>
    </Suspense>}
    {mode==="chat"&&arcadeOpen&&game&&(game.kind==="memory"||game.kind==="pong")&&game.phase!=="invite"&&
-    <ArcadeView key={game.id} game={game} side={side}
+    <ArcadeView key={game.id} game={game} side={side} questionPending={questionActive}
       onFlip={index=>{if(canChat)socket.emit("memory:flip",index);}}
       onPaddle={y=>{if(canChat)socket.emit("pong:paddle",y);}}
       onDrag={active=>{if(canChat)socket.emit("pong:drag",{id:game.id,active});}}

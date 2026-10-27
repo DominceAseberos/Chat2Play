@@ -30,7 +30,9 @@ type Game = {
   pongTargetPoints?:5|10;
   id: string; memory?: MemoryState; pong?: PongState; forehead?: ForeheadState; foreheadOptions?:ForeheadOptions; foreheadCategories?:GameCategory[]; foreheadCategoryDraft?:GameCategory[]; categoryAgreement?:[boolean,boolean];sceneReady?:[boolean,boolean];micReady?:[boolean,boolean];
 };
-type Room = { id: string; players: [string, string]; likes: [boolean, boolean]; game: Game | null; matchType: "preferred" | "fallback"; commonGames: Kind[] };
+type WinnerQuestion = {id:string;gameId:string;asker:Side;phase:"asking"|"answering";text?:string;round:number};
+type Room = { id: string; players: [string, string]; likes: [boolean, boolean]; game: Game | null; matchType: "preferred" | "fallback"; commonGames: Kind[];
+  question:WinnerQuestion|null;questionGameId:string|null;questionSkips:[number,number] };
 
 const profileSchema = z.object({
   gender: z.enum(["woman", "man", "nonbinary", "unspecified"]),
@@ -50,6 +52,9 @@ const messageSchema = z.union([
   z.object({ text: z.string().trim().min(1).max(500) })
 ]);
 const reportSchema = z.object({ reason: z.enum(["harassment", "sexual", "spam", "other"]) });
+const winnerQuestionSchema=z.object({id:z.string().uuid(),text:z.string().trim().min(3).max(160)});
+const winnerAnswerSchema=z.object({id:z.string().uuid(),text:z.string().trim().min(1).max(500)});
+const winnerSkipSchema=z.object({id:z.string().uuid()});
 const PORT = Number(process.env.PORT || 3001);
 const allowedOrigin = process.env.CLIENT_ORIGIN;
 const app = express();
@@ -102,8 +107,24 @@ function getRoom(socket: Socket): { room: Room; side: Side } | null {
   const side = room.players.indexOf(socket.id);
   return side === -1 ? null : { room, side: side as Side };
 }
+function emitQuestion(room:Room){
+ io.to(room.id).emit("winner-question:state",{
+  skipsLeft:[...room.questionSkips],question:room.question?{...room.question}:null
+ });
+}
+function awardQuestion(room:Room){
+ const game=room.game;
+ if(!game||game.phase!=="finished"||typeof game.winner!=="number"||room.questionGameId===game.id)return;
+ room.questionGameId=game.id;
+ room.question={id:randomUUID(),gameId:game.id,asker:game.winner,phase:"asking",round:1};
+ emitQuestion(room);
+}
+function questionMessage(room:Room,from:Side,text:string,kind:"winner-question"|"winner-answer"|"winner-skip"){
+ io.to(room.id).emit("chat:message",{id:randomUUID(),kind,text,from,at:Date.now()});
+}
 function emitGame(room: Room) {
   const game=room.game;
+  awardQuestion(room);
   // Secrets are projected per recipient; never broadcast both words to a room.
   if(game?.kind==="forehead"){
     for(const side of [0,1] as const){
@@ -241,12 +262,14 @@ function drainMatches(){
     const a=io.sockets.sockets.get(first.id),b=io.sockets.sockets.get(second.id);
     if(!a||!b){if(!a)waiting.delete(first.id);if(!b)waiting.delete(second.id);continue;}
     waiting.delete(first.id);waiting.delete(second.id);changed=true;matched++;
-    const room:Room={id:randomUUID(),players:[first.id,second.id],likes:[false,false],game:null,matchType:kind,commonGames};
+    const room:Room={id:randomUUID(),players:[first.id,second.id],likes:[false,false],game:null,matchType:kind,commonGames,
+      question:null,questionGameId:null,questionSkips:[3,3]};
     rooms.set(room.id,room);
     membership.set(first.id,room.id);membership.set(second.id,room.id);
     a.join(room.id);b.join(room.id);
     a.emit("match:found",{side:0,partnerGender:second.profile.gender,commonGames,matchType:kind});
     b.emit("match:found",{side:1,partnerGender:first.profile.gender,commonGames,matchType:kind});
+    emitQuestion(room);
   }
   if(changed)emitPresence();
   if(matched===32 && waiting.size>=2)scheduleMatching();
@@ -284,6 +307,7 @@ io.on("connection", socket => {
       socket.emit("session:state",{phase:"chat",side,partnerGender:profiles.get(peerId)?.gender||"unspecified",commonGames:room.commonGames,matchType:room.matchType});
       socket.emit("like:state",{yours:room.likes[side],theirs:room.likes[otherSide(side)],mutual:room.likes.every(Boolean)});
       emitGame(room);
+      emitQuestion(room);
       io.to(peerId).emit("partner:connection",{connected:true});
     } else socket.emit("session:lost",{reason:"Your previous connection could not be restored."});
   }
@@ -308,6 +332,7 @@ io.on("connection", socket => {
     const state = getRoom(socket);
     const parsed = messageSchema.safeParse(raw);
     if (!state || !parsed.success){reply({ok:false,error:"Your message could not be sent. Check your connection or start a new chat."});return;}
+    if(state.room.question){reply({ok:false,error:"Finish the winner's question first."});return;}
     const now = Date.now();
     const submittedId="id" in parsed.data?parsed.data.id:undefined;
     if(submittedId&&recentMessageIds.get(socket.id)?.has(submittedId)){reply({ok:true});return;}
@@ -343,6 +368,42 @@ io.on("connection", socket => {
     const peerId = state.room.players[otherSide(state.side)];
     io.to(peerId).emit("chat:typing", { active });
   });
+  socket.on("winner-question:ask",(raw:unknown,ack?: (result:{ok:boolean;error?:string})=>void)=>{
+    const parsed=winnerQuestionSchema.safeParse(raw),state=getRoom(socket);
+    const question=state?.room.question;
+    if(!parsed.success||!state||!question||question.id!==parsed.data.id||
+      question.asker!==state.side||question.phase!=="asking"){
+      if(typeof ack==="function")ack({ok:false,error:"This question is no longer available."});return;
+    }
+    question.text=parsed.data.text;question.phase="answering";
+    questionMessage(state.room,state.side,question.text,"winner-question");
+    emitQuestion(state.room);
+    if(typeof ack==="function")ack({ok:true});
+  });
+  socket.on("winner-question:answer",(raw:unknown,ack?: (result:{ok:boolean;error?:string})=>void)=>{
+    const parsed=winnerAnswerSchema.safeParse(raw),state=getRoom(socket);
+    const question=state?.room.question;
+    if(!parsed.success||!state||!question||question.id!==parsed.data.id||
+      question.asker===state.side||question.phase!=="answering"){
+      if(typeof ack==="function")ack({ok:false,error:"This question is no longer available."});return;
+    }
+    questionMessage(state.room,state.side,parsed.data.text,"winner-answer");
+    state.room.question=null;emitQuestion(state.room);
+    if(typeof ack==="function")ack({ok:true});
+  });
+  socket.on("winner-question:skip",(raw:unknown,ack?: (result:{ok:boolean;error?:string})=>void)=>{
+    const parsed=winnerSkipSchema.safeParse(raw),state=getRoom(socket);
+    const question=state?.room.question;
+    if(!parsed.success||!state||!question||question.id!==parsed.data.id||
+      question.asker===state.side||question.phase!=="answering"||state.room.questionSkips[state.side]<=0){
+      if(typeof ack==="function")ack({ok:false,error:"This question cannot be skipped."});return;
+    }
+    state.room.questionSkips[state.side]--;
+    questionMessage(state.room,state.side,`Skipped the question · ${state.room.questionSkips[state.side]} skips left`,"winner-skip");
+    question.phase="asking";question.text=undefined;question.round++;
+    emitQuestion(state.room);
+    if(typeof ack==="function")ack({ok:true});
+  });
   socket.on("game:propose", (raw: unknown) => {
     const state=getRoom(socket);
     const kind=typeof raw==="string"?raw:(raw&&typeof raw==="object"?(raw as {kind?:unknown}).kind:null);
@@ -350,6 +411,7 @@ io.on("connection", socket => {
     const selectedPoints=kind==="pong"&&raw&&typeof raw==="object"?
       (raw as {options?:{targetPoints?:unknown}}).options?.targetPoints:5;
     if(kind==="pong"&&selectedPoints!==5&&selectedPoints!==10)return;
+    if(state.room.question){socket.emit("system:notice","Finish the winner's question before starting another game.");return;}
     if(state.room.game&&(state.room.game.phase!=="finished"||state.room.game.rps?.rematch)){
       socket.emit("system:notice","Finish or close your current game before inviting another one.");
       return;
@@ -394,7 +456,7 @@ io.on("connection", socket => {
   });
   socket.on("rps:rematch",(raw:unknown)=>{
     const st=getRoom(socket),game=st?.room.game,r=game?.rps;
-    if(!st||game?.kind!=="rps"||game.phase!=="finished"||!r||!raw||typeof raw!=="object"
+    if(!st||st.room.question||game?.kind!=="rps"||game.phase!=="finished"||!r||!raw||typeof raw!=="object"
       ||(raw as {id?:unknown}).id!==game.id)return;
     const now=Date.now();
     if(r.rematch&&now>=r.rematch.expiresAt)return;

@@ -16,9 +16,12 @@ export type Choice = "rock" | "paper" | "scissors";
 export type Theme = "light" | "dark";
 export type Sticker = "heart" | "spark" | "smile" | "flower";
 export type ChatMessage = {
-  id: string; kind: "text" | "gif" | "sticker"; text?: string;
+  id: string; kind: "text" | "gif" | "sticker" | "winner-question" | "winner-answer" | "winner-skip"; text?: string;
   url?: string; sticker?: Sticker; from: Side; at: number; pending?: boolean; failed?: boolean;
 };
+export type WinnerQuestionState={skipsLeft:[number,number];question:{
+  id:string;gameId:string;asker:Side;phase:"asking"|"answering";text?:string;round:number
+}|null};
 export type Game = {
   id:string; kind:Kind; phase:"invite"|"categories"|"settings"|"mic"|"loading"|"playing"|"finished"; by:Side;
   pongTargetPoints?:5|10;

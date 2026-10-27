@@ -37,6 +37,16 @@ try{
   await Promise.all([a.getByText("MATCH WINNER!",{exact:false}).first().waitFor({timeout:18000}),
    b.locator(".rps-full-finish:visible").first().waitFor({timeout:18000})]);
  };
+ const answerWinnerQuestion=async()=>{
+  await a.getByRole("button",{name:"Ask in chat"}).click();
+  await b.getByRole("button",{name:"Answer in chat"}).click();
+  await a.locator("#winner-question-input").fill("What game should we try next?");
+  await a.getByRole("button",{name:"Ask question"}).click();
+  await b.locator("#winner-answer-input").fill("Let's play again.");
+  await b.getByRole("button",{name:"Send answer"}).click();
+  await Promise.all([a,b].map(p=>p.locator(".winner-question-card").waitFor({state:"hidden"})));
+  await Promise.all([a,b].map(p=>p.locator(".rps-return-to-game").click()));
+ };
  await playAndFinish();
  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/rps-shared-pov.png"});
  await a.evaluate(()=>{window.__rpsOriginalCanvas=document.querySelector('.rps-scene-3d canvas');});
@@ -50,12 +60,14 @@ try{
  assert.ok(await a.evaluate(()=>document.querySelector('.rps-scene-3d canvas')===window.__rpsOriginalCanvas),"Switching camera rebuilt the 3D scene");
  assert.deepEqual(await a.locator(".rps-scene-arena .rps-arena-sign:not([hidden])").allTextContents(),["",""],"Floating signs should have no card names");
  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/rps-arena-matched.png"});
+ await answerWinnerQuestion();
  await a.getByRole("button",{name:"Request rematch"}).click();
  await a.getByText("Waiting for partner",{exact:false}).first().waitFor({timeout:6000});
  await b.getByRole("button",{name:/Accept rematch/}).click();
  await playAndFinish();
  assert.ok((await a.locator(".rps-stage-hud span").first().textContent())?.includes("1"),"Accepted rematch did not reset and replay the match");
  console.log("PASS mutual rematch: two acceptances start a new match");
+ await answerWinnerQuestion();
  await b.getByRole("button",{name:"Request rematch"}).click();
  await a.getByRole("button",{name:/Accept rematch/}).waitFor({timeout:3000});
  await a.getByRole("button",{name:"Back to chat"}).first().click();

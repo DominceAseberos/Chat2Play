@@ -10,18 +10,19 @@ type ArcadeProps = {
  game: Game; side: Side; onFlip:(index:number)=>void;
  onPaddle:(value:{y:number;depth:number})=>void;
  onDrag:(active:boolean)=>void;onSceneReady:()=>void;
- onMinimize:()=>void; onClose:()=>void; onReplay:(kind:Kind)=>void;
+ onMinimize:()=>void; onClose:()=>void; onReplay:(kind:Kind)=>void;questionPending:boolean;
 };
 const icons = { sun:Sun, moon:Moon, heart:Heart, star:Star, gem:Gem, zap:Zap };
 const names = { sun:"Sun", moon:"Moon", heart:"Heart", star:"Star", gem:"Diamond", zap:"Lightning" };
-function ResultBanner({game,side,onReplay}:{game:Game;side:Side;onReplay:(kind:Kind)=>void}){
+function ResultBanner({game,side,onReplay,onChat,questionPending}:{game:Game;side:Side;onReplay:(kind:Kind)=>void;onChat:()=>void;questionPending:boolean}){
  if(game.phase!=="finished")return null;
  const result=game.winner==="draw"?"It's a draw!":game.winner===side?"You won!":"Nice game!";
  return <motion.div className="arcade-result" initial={{opacity:0,scale:.94}} animate={{opacity:1,scale:1}}>
   <span className="arcade-trophy"><Trophy size={24}/></span>
   <h3>{result}</h3>
-  <p>{game.winner==="draw"?"An equally matched duo.":game.winner===side?"Great moves — well played.":"Your partner took this round. Ready for a rematch?"}</p>
-  <button type="button" className="primary-button" onClick={()=>onReplay(game.kind)}><Gamepad2 size={17}/> Request rematch <ArrowRight size={17}/></button>
+  <p>{questionPending?game.winner===side?"Your turn to ask one question.":"The winner gets to ask you a question.":game.winner==="draw"?"An equally matched duo.":"Great game. Ready for another?"}</p>
+  {questionPending?<button type="button" className="primary-button" onClick={onChat}><Crown size={17}/>{game.winner===side?"Ask your question":"Go to question"}<ArrowRight size={17}/></button>
+   :<button type="button" className="primary-button" onClick={()=>onReplay(game.kind)}><Gamepad2 size={17}/> Request rematch <ArrowRight size={17}/></button>}
  </motion.div>;
 }
 function MemoryDuel({game,side,onFlip}:{game:Game;side:Side;onFlip:(index:number)=>void}){
@@ -66,8 +67,8 @@ export function projectPongForSide(x:number,y:number,side:Side){
 export function paddleFromScreenX(x:number,side:Side){
  return Math.max(-.35,Math.min(1.35,side===0?x:1-x));
 }
-function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay}:{game:Game;side:Side;
- onPaddle:(value:{y:number;depth:number})=>void;onDrag:(active:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void}){
+function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay,onChat,questionPending}:{game:Game;side:Side;
+ onPaddle:(value:{y:number;depth:number})=>void;onDrag:(active:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void;onChat:()=>void;questionPending:boolean}){
  const state=game.pong;
  if(!state)return null;
  const opponent=side===0?1:0;
@@ -95,12 +96,12 @@ function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay}:{game:Game;
     <span>{state.serving&&state.server===side?"SWIPE FORWARD INTO THE BALL":"DRAG INTO THE BALL"}</span><div className="pong-swipe-track"><i/></div>
     <small>Faster, longer swipes hit harder</small>
    </div>
-   {game.phase==="finished"&&<div className="pong-result-float"><ResultBanner game={game} side={side} onReplay={onReplay}/></div>}
+   {game.phase==="finished"&&<div className="pong-result-float"><ResultBanner game={game} side={side} onReplay={onReplay} onChat={onChat} questionPending={questionPending}/></div>}
   </div>
   <div className="pong-controls"><span className="pong-my-paddle"><span className={`paddle-key bottom team-${side}`}/> Your paddle starts behind the table</span><span>Drag in any direction to strike</span></div>
  </section>;
 }
-export function ArcadeView({game,side,onFlip,onPaddle,onDrag,onSceneReady,onMinimize,onClose,onReplay}:ArcadeProps){
+export function ArcadeView({game,side,onFlip,onPaddle,onDrag,onSceneReady,onMinimize,onClose,onReplay,questionPending}:ArcadeProps){
  const name=game.kind==="memory"?"Memory Duel":"Ping Pong";
  return <motion.div className="arcade-overlay" role="dialog" aria-label={name} aria-modal="true" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.2}}>
   <motion.div className={"arcade-window"+(game.kind==="pong"?" pong-window":"")} initial={{scale:.96,y:16}} animate={{scale:1,y:0}} exit={{scale:.97,y:10}} transition={{type:"spring",stiffness:330,damping:29}}>
@@ -110,7 +111,7 @@ export function ArcadeView({game,side,onFlip,onPaddle,onDrag,onSceneReady,onMini
    </header>
    <div className={"arcade-content"+(game.kind==="pong"?" pong-content":"")}>
     {game.kind==="memory"&&<div className="arcade-intro"><span className="arcade-live"><i/> MATCH IN PROGRESS</span><h2>Find the perfect pair.</h2><p>Remember the cards. Outmatch your new friend.</p></div>}
-    {game.kind==="pong"?<PongArena game={game} side={side} onPaddle={onPaddle} onDrag={onDrag} onSceneReady={onSceneReady} onReplay={onReplay}/>:game.phase==="finished"?<ResultBanner game={game} side={side} onReplay={onReplay}/>:<MemoryDuel game={game} side={side} onFlip={onFlip}/>}
+    {game.kind==="pong"?<PongArena game={game} side={side} onPaddle={onPaddle} onDrag={onDrag} onSceneReady={onSceneReady} onReplay={onReplay} onChat={onMinimize} questionPending={questionPending}/>:game.phase==="finished"?<ResultBanner game={game} side={side} onReplay={onReplay} onChat={onMinimize} questionPending={questionPending}/>:<MemoryDuel game={game} side={side} onFlip={onFlip}/>}
    </div>
    <footer className="arcade-footer"><span><Heart size={15}/> Play nice, have fun.</span><button type="button" onClick={onMinimize}>Minimize and chat <ArrowRight size={16}/></button></footer>
   </motion.div>
