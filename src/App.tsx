@@ -1,5 +1,5 @@
 import {GAME_CATEGORIES,GAME_CATEGORY_LABELS,type GameCategory} from "../server/foreheadWordBank";
-import { Component, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type UIEvent } from "react";
+import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type UIEvent } from "react";
 import { io } from "socket.io-client";
 import HenyoVoice from "./HenyoVoice";
 import { ArcadeView } from "./ArcadeView";
@@ -254,10 +254,19 @@ function App(){
  },[socket]);
  // Keep the active match history visible like a normal messenger. Follow new
  // messages at the bottom unless the user has scrolled up to read older ones.
- useEffect(()=>{
+ useLayoutEffect(()=>{
   const pane=bottom.current?.closest(".conversation-scroll");
   if(pane&&followLatestMessage.current)pane.scrollTop=pane.scrollHeight;
- },[messages.length,mode]);
+ },[messages.length,mode,partnerTyping]);
+ useEffect(()=>{
+  const pane=bottom.current?.closest(".conversation-scroll");
+  if(!pane)return;
+  const observer=new ResizeObserver(()=>{
+   if(followLatestMessage.current)pane.scrollTop=pane.scrollHeight;
+  });
+  observer.observe(pane);
+  return()=>observer.disconnect();
+ },[mode]);
  function onConversationScroll(e:UIEvent<HTMLDivElement>){
   const pane=e.currentTarget;
   followLatestMessage.current=pane.scrollHeight-pane.scrollTop-pane.clientHeight<75;
@@ -486,9 +495,8 @@ function App(){
      {!partnerConnected&&connected&&<div className="partner-connection-banner" role="status"><Spinner/> Stranger disconnected. Waiting briefly for reconnection...</div>}
      <div className="chat-body">
        <div className="conversation">
-        <div className="conversation-scroll" role="log" aria-label="Temporary chat messages" aria-live="polite" onScroll={onConversationScroll}>
-          {(!mobileLayout||(messages.length===0&&!game))&&<div className="conversation-start"><div className="conversation-start-icon"><Sparkles size={24}/></div><span className="conversation-overline">A NEW CONNECTION</span><h3>It's just you two.</h3><p>{matchType==="fallback"?"You both allowed flexible matching. Your preferred filters didn't fully align, but you can still say hello and play.":"Don't overthink the first message. Say hello, or break the ice with a game."}</p><button type="button" className="play-icebreaker" disabled={!canChat} onClick={()=>{setGamesOpen(true);setPickerOpen(false);}}><Gamepad2 size={19}/> Play a game together <ArrowRight size={17}/></button></div>}
-          {partnerTyping&&<div className="typing-over-chat" role="status"><TypingIndicator/></div>}
+        <div className={"conversation-scroll"+(messages.length?" has-messages":"")} role="log" aria-label="Temporary chat messages" aria-live="polite" onScroll={onConversationScroll}>
+          {messages.length===0&&!game&&<div className="conversation-start"><div className="conversation-start-icon"><Sparkles size={24}/></div><span className="conversation-overline">A NEW CONNECTION</span><h3>It's just you two.</h3><p>{matchType==="fallback"?"You both allowed flexible matching. Your preferred filters didn't fully align, but you can still say hello and play.":"Don't overthink the first message. Say hello, or break the ice with a game."}</p><button type="button" className="play-icebreaker" disabled={!canChat} onClick={()=>{setGamesOpen(true);setPickerOpen(false);}}><Gamepad2 size={19}/> Play a game together <ArrowRight size={17}/></button></div>}
           {likes.mutual&&<div className="like-notice"><Heart size={16} fill="currentColor"/> You both liked each other</div>}
           {messages.map(m=><div className={"message-line"+(m.from===side?" mine":" theirs")} key={m.id}>
            {m.from!==side&&<span className="message-avatar"><UserRound size={15}/></span>}
@@ -509,6 +517,7 @@ function App(){
           <div ref={bottom}/>
         </div>
         <div className="composer-area">
+          {partnerTyping&&<div className="typing-above-composer"><TypingIndicator/></div>}
           {winnerQuestion?.question&&<WinnerQuestionCard state={winnerQuestion} side={side} connected={canChat} onAction={winnerQuestionAction}/>}
           <AnimatePresence>{pickerOpen&&<motion.div className="picker-holder" initial={reduceMotion?false:{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0,y:8}} transition={{duration:.16}}><div className="picker-heading"><strong>Express yourself</strong><button type="button" className="icon-button" aria-label="Close reactions" onClick={()=>setPickerOpen(false)}><X size={18}/></button></div>
             <ReactionPicker theme={theme} onEmoji={sendEmoji} onSticker={sticker=>sendPayload({kind:"sticker",sticker})} onGif={url=>sendPayload({kind:"gif",url})}/></motion.div>}</AnimatePresence>

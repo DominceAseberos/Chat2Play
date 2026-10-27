@@ -19,6 +19,19 @@ for(const [width,height] of specs){
   await Promise.all([a.getByRole("button",{name:"Find a stranger"}).click(),b.getByRole("button",{name:"Find a stranger"}).click()]);
   await Promise.all([a.locator(".partner-name-button").waitFor({timeout:18000}),b.locator(".partner-name-button").waitFor({timeout:18000})]);
   console.log("MATCH",width+"x"+height,"both clients joined same match");
+  await b.getByRole("textbox",{name:"Message",exact:true}).fill("typing preview");
+  await a.locator(".typing-above-composer .typing-pill").waitFor({timeout:5000});
+  const typingPlacement=await a.evaluate(()=>{
+   const typing=document.querySelector(".typing-above-composer")?.getBoundingClientRect();
+   const input=document.querySelector(".composer")?.getBoundingClientRect();
+   return {typingBottom:typing?.bottom,inputTop:input?.top};
+  });
+  assert.ok(typingPlacement.typingBottom<=typingPlacement.inputTop+2&&
+   typingPlacement.inputTop-typingPlacement.typingBottom<15,
+   "Typing indicator must sit immediately above the input: "+JSON.stringify(typingPlacement));
+  if(width===390)await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/chat-typing-390.png"});
+  await b.getByRole("textbox",{name:"Message",exact:true}).fill("");
+  await a.locator(".typing-above-composer").waitFor({state:"detached",timeout:5000});
   const texts=[["A","FIRST_HELLO"],["B","FIRST_REPLY"],["A","SECOND_QUESTION"],["B","SECOND_REPLY"],["A","THIRD_MESSAGE"]];
   let i=0;
   for(const [who,text] of texts){
@@ -32,6 +45,17 @@ for(const [width,height] of specs){
     const bubbles=await q.locator(".conversation-scroll .message-bubble").allTextContents();
     if(visible!==i||bubbles.length!==i){
      throw Error("Message history lost after "+text+"; "+JSON.stringify({expected:i,visible,bubbles}));
+    }
+    if(i===1){
+     const placement=await q.evaluate(()=>{
+      const line=document.querySelector(".conversation-scroll .message-line")?.getBoundingClientRect();
+      const composer=document.querySelector(".composer-area")?.getBoundingClientRect();
+      return {messageBottom:line?.bottom,composerTop:composer?.top};
+     });
+     assert.ok(placement.messageBottom<=placement.composerTop+2&&
+      placement.composerTop-placement.messageBottom<48,
+      "The first message must sit near the input: "+JSON.stringify(placement));
+     if(width===390&&q===a)await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/chat-first-message-390.png"});
     }
    }
    await p.waitForTimeout(850); // Server permits one message per sender per 700ms.

@@ -12,8 +12,6 @@
 .partner-connection-banner{display:flex;align-items:center;justify-content:center;gap:8px;flex:0 0 auto;padding:9px 12px;background:var(--accent-light);color:var(--accent);font-size:11px;font-weight:750}
 .tiny-dot.disconnected{background:#eeb36d;box-shadow:0 0 0 3px #eeb36d28}
 .c2p-app .conversation{position:relative}
-.typing-over-chat{position:absolute;z-index:4;left:14px;bottom:10px;pointer-events:none}
-.typing-over-chat .typing-row{margin:0}
 .retry-message{display:inline-flex;gap:5px;align-items:center;border:0;background:var(--surface-alt);border-radius:8px;padding:4px 7px;color:var(--accent);font-size:10px;font-weight:800}
 .network-recovery{position:fixed;z-index:150;top:clamp(55px,9dvh,95px);left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 30px));display:flex;gap:11px;align-items:center;border:1px solid var(--border);border-radius:17px;padding:12px;background:var(--surface);box-shadow:0 17px 42px #0005;color:var(--text)}
 .network-recovery>svg{flex:0 0 auto;color:#eeb36d}
@@ -54,7 +52,6 @@
  .c2p-app .form-label:has(.select-all-games){align-items:center}
  .c2p-app .select-all-games{min-height:34px}
  .c2p-app .temporary-top-hint{top:72px;max-width:calc(100% - 22px);padding:8px 11px;font-size:10px}
- .c2p-app .typing-over-chat{left:14px;bottom:7px}
  .c2p-app .game-sidebar{padding:clamp(17px,3dvh,24px) max(19px,5vw) max(20px,env(safe-area-inset-bottom))}
  .c2p-app .sidebar-game{min-height:55px}
  .c2p-app .ended-inner{padding:5px 14px}
