@@ -107,7 +107,8 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    new THREE.MeshBasicMaterial({color:"#111039",transparent:true,opacity:.28,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;shadow.position.y=.193;scene.add(shadow);
   const camera=new THREE.PerspectiveCamera(42,1,.1,70);
-  camera.position.set(.52,6.65,10.65);camera.lookAt(0,.12,.35);
+  // Keep the near-end view centered, as in a first-person table tennis rally.
+  camera.position.set(0,6.35,10.65);camera.lookAt(0,.12,.35);
   const smooth={x:.5,y:.5,h:.42,paddles:[.5,.5]},clock=new THREE.Clock();
   const previousScreenX=[.5,.5],paddleLean=[0,0];
  // Transparent diminishing ball trail + future ballistic trajectory guide.
@@ -138,11 +139,13 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   const toView=(x:number,y:number)=>side===0?{x:y,y:1-x}:{x:1-y,y:x};
   let raf=0,alive=true,previous=performance.now(),lastSent=0,down=false,id=-1;
   let lastInputX:number|null=null,localLeanMomentum=0;
-  function input(event:PointerEvent){
+  let localPaddleTarget:number|null=null,lastLocalInputAt=0;
+  function input(event:PointerEvent,forceSend=false){
    if(!activeRef.current||!host)return;
    const rect=host.getBoundingClientRect();
    // x controls physical paddle position; no controls on vertical axis.
-   const fraction=Math.max(0,Math.min(1,(event.clientX-rect.left)/Math.max(rect.width,1)));
+   // Match the server's .12..88 paddle limit for instant local feedback.
+   const fraction=THREE.MathUtils.clamp((event.clientX-rect.left)/Math.max(rect.width,1),.12,.88);
    const now=performance.now();
    // Accumulate a small directional impulse. Frame damping makes it settle
    // naturally even when pointer events arrive at uneven intervals.
@@ -151,16 +154,22 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
      localLeanMomentum-(fraction-lastInputX)*4.5,-.38,.38);
    lastInputX=fraction;
    const canonical=side===0?fraction:1-fraction;
-   if(now-lastSent>25){lastSent=now;send.current(canonical);}
+   localPaddleTarget=canonical;lastLocalInputAt=now;
+   if(forceSend||now-lastSent>25){lastSent=now;send.current(canonical);}
   }
   const onDown=(e:PointerEvent)=>{
    if(!activeRef.current)return;
    down=true;id=e.pointerId;chargeLocalAt=performance.now();
    host.setPointerCapture(e.pointerId);input(e);chargeCallback.current(true);
  };
-  const onMove=(e:PointerEvent)=>{if(down&&id===e.pointerId)input(e);};
+  const onMove=(e:PointerEvent)=>{
+   if(down&&id===e.pointerId)input(e);
+   else if(!down&&e.pointerType==="mouse")input(e);
+  };
   const onUp=(e:PointerEvent)=>{
    if(e.pointerId===id){
+    // The release position must reach the server even if the last move was throttled.
+    if(activeRef.current)input(e,true);
     down=false;id=-1;smashAt=performance.now();chargeLocalAt=0;
     lastInputX=null;
     if(host.hasPointerCapture(e.pointerId))host.releasePointerCapture(e.pointerId);
@@ -181,7 +190,10 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    else{smooth.x=THREE.MathUtils.lerp(smooth.x,next.ball.x,blend);smooth.y=THREE.MathUtils.lerp(smooth.y,next.ball.y,blend);}
    smooth.h=THREE.MathUtils.lerp(smooth.h,next.ball.h??.38,blend);
    for(const player of [0,1] as const){
-    smooth.paddles[player]=THREE.MathUtils.lerp(smooth.paddles[player],next.paddles[player],1-Math.exp(-24*dt));
+    const useLocal=player===side&&localPaddleTarget!==null&&now-lastLocalInputAt<500;
+    const paddleTarget=useLocal?localPaddleTarget!:next.paddles[player];
+    smooth.paddles[player]=THREE.MathUtils.lerp(smooth.paddles[player],paddleTarget,
+     1-Math.exp(-(useLocal?40:24)*dt));
     const sx=side===0?smooth.paddles[player]:1-smooth.paddles[player];
     paddles[player].position.set((sx-.5)*5.0,.62,player===side?4.48:-4.48);
     // Lean into the actual travel direction, then return upright at rest.

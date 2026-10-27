@@ -51,13 +51,20 @@ for(const [width,height] of pairs){
   assert.notEqual(values[0].side,values[1].side);
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/test-3d-pong-"+width+"-center.png"});
   const box=await sceneA.boundingBox();
+  const controlY=box.y+box.height*.84;
+  await a.mouse.move(box.x+box.width*.72,controlY);
+  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)>.62,null,{timeout:7000});
+  await b.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.opponentPaddleX)<.38,null,{timeout:7000});
+  if(width<700){
+   await a.touchscreen.tap(box.x+box.width*.35,controlY);
+   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)<.44,null,{timeout:7000});
+   await b.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.opponentPaddleX)>.56,null,{timeout:7000});
+  }
   await a.mouse.move(box.x+box.width*.18,box.y+box.height*.84);await a.mouse.down();await a.mouse.up();
   await a.waitForTimeout(380);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)<.29,null,{timeout:7000});
   await b.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.opponentPaddleX)>.70,null,{timeout:7000});
-  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/test-3d-pong-"+width+"-a.png"});
-  await b.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/test-3d-pong-"+width+"-b.png"});
-  const dragAndMeasure=async(from,to,direction)=>{
+  const dragAndMeasure=async(from,to)=>{
    let min=Infinity,max=-Infinity;
    const y=box.y+box.height*.84;
    await a.mouse.move(box.x+box.width*from,y);await a.mouse.down();
@@ -66,19 +73,18 @@ for(const [width,height] of pairs){
     await a.waitForTimeout(25);
     const tilt=Number(await sceneA.getAttribute("data-self-paddle-tilt"));
     min=Math.min(min,tilt);max=Math.max(max,tilt);
-    if(i===6)await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/test-3d-pong-"+width+"-tilt-"+direction+".png"});
    }
    const beforeRelease=Number(await sceneA.getAttribute("data-self-paddle-tilt"));
    await a.mouse.up();await a.waitForTimeout(60);
    const afterRelease=Number(await sceneA.getAttribute("data-self-paddle-tilt"));
    return {min,max,beforeRelease,afterRelease};
   };
-  const right=await dragAndMeasure(.18,.82,"right");
+  const right=await dragAndMeasure(.18,.82);
   assert.ok(right.min<-.08,"Paddle should lean right while moving right: "+JSON.stringify(right));
   assert.ok(Math.abs(right.afterRelease)<Math.abs(right.beforeRelease)+.01,
    "Right lean should ease back after release: "+JSON.stringify(right));
   await a.waitForTimeout(350);
-  const left=await dragAndMeasure(.82,.18,"left");
+  const left=await dragAndMeasure(.82,.18);
   assert.ok(left.max>.08,"Paddle should lean left while moving left: "+JSON.stringify(left));
   assert.ok(Math.abs(left.afterRelease)<Math.abs(left.beforeRelease)+.01,
    "Left lean should ease back after release: "+JSON.stringify(left));
