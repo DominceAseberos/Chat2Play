@@ -60,6 +60,49 @@ tickPong(forward,fixed+33);
 assert.ok(forward.ball.vx>0&&forward.lastHit[0]>0,
  "A forward drag must strike a ball when the moving paddle crosses it");
 console.log("PASS: paddle moves behind the board or up to the net and hits on its forward sweep.");
+const forgiving=createPong();forgiving.serveAt=0;forgiving.lastTick=fixed;
+forgiving.lastHitter=1;forgiving.bounceQueue=[];forgiving.serveActive=false;
+movePaddle(forgiving,0,.3,fixed-40);
+setPongDragging(forgiving,0,true,fixed-30);
+movePaddle(forgiving,0,.5,fixed-10);
+forgiving.ball={x:-.075,y:.72,vx:-.4,vy:0,h:.18,vh:0};
+tickPong(forgiving,fixed+33);
+assert.ok(forgiving.lastHit[0]>0&&forgiving.ball.vx>0,
+ "A deliberate stroke should catch a ball close to the paddle edge");
+let landedFar=false;
+for(let t=fixed+58;t<fixed+2000;t+=25){
+ tickPong(forgiving,t);
+ if(forgiving.bounceQueue.length===0){landedFar=true;break;}
+ if(forgiving.scores[0]||forgiving.scores[1])break;
+}
+assert.ok(landedFar&&forgiving.scores[0]===0&&forgiving.scores[1]===0,
+ "A successful near-edge hit should clear the net and land on the far side");
+const tooFar=createPong();tooFar.serveAt=0;tooFar.lastTick=fixed;
+tooFar.lastHitter=1;tooFar.bounceQueue=[];
+movePaddle(tooFar,0,.3,fixed-40);
+setPongDragging(tooFar,0,true,fixed-30);
+movePaddle(tooFar,0,.5,fixed-10);
+tooFar.ball={x:-.075,y:.8,vx:-.4,vy:0,h:.18,vh:0};
+tickPong(tooFar,fixed+33);
+assert.equal(tooFar.lastHit[0],0,"A distant stroke must still miss");
+const forwardLow=createPong();forwardLow.serveAt=0;forwardLow.lastTick=fixed;
+forwardLow.lastHitter=1;forwardLow.bounceQueue=[];forwardLow.serveActive=false;
+movePaddle(forwardLow,0,{y:.3,depth:.42},fixed-40);
+forwardLow.previousDepths=[.42,forwardLow.depths[1]];
+setPongDragging(forwardLow,0,true,fixed-30);
+movePaddle(forwardLow,0,{y:.5,depth:.42},fixed-10);
+forwardLow.ball={x:.44,y:.5,vx:-.4,vy:0,h:.18,vh:0};
+tickPong(forwardLow,fixed+33);
+assert.ok(forwardLow.lastHit[0]>0,"A low ball should connect with a forward paddle");
+let forwardLanded=false;
+for(let t=fixed+58;t<fixed+1800;t+=25){
+ tickPong(forwardLow,t);
+ if(forwardLow.bounceQueue.length===0){forwardLanded=true;break;}
+ if(forwardLow.scores[0]||forwardLow.scores[1]||forwardLow.netHits)break;
+}
+assert.ok(forwardLanded&&forwardLow.netHits===0,
+ "A low hit near the net should clear it and reach the far court");
+console.log("PASS: near-edge strokes connect and reach the far court without catching distant balls.");
 const assist=createPong();assist.serveAt=0;assist.lastTick=fixed;
 assist.ball={x:.20,y:.78,vx:-.4,vy:0,h:.43,vh:.2};
 assist.drag[0].lastAt=fixed-1000;

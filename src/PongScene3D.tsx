@@ -132,9 +132,9 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    new THREE.MeshBasicMaterial({color:"#111039",transparent:true,opacity:.28,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;shadow.position.y=.193;scene.add(shadow);
   const camera=new THREE.PerspectiveCamera(42,1,.1,70);
-  // The viewpoint follows the player's depth while looking down the table.
+  // The viewpoint follows the player's depth and circles behind wide shots.
   camera.position.set(0,6.35,11);camera.lookAt(0,.12,.35);
-  let cameraFocusZ=.35;
+  let cameraFocusX=0,cameraFocusZ=.35;
   const smooth={x:.5,y:.5,h:.42,paddles:[.5,.5],depths:[-.1,1.1]};
   const previousScreenX=[.5,.5],paddleLean=[0,0];
   const touchingNet=[false,false],netHorizontalAngle=[0,0];
@@ -414,11 +414,19 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    host!.dataset.renderer="three";host!.dataset.drawCalls=String(renderer.info.render.calls);
    host!.dataset.ballHeight=next.ball.h?.toFixed(3)??"0";
    const ownReach=pongReachFromDepth(smooth.depths[side],side);
+   const ownScreenX=side===0?smooth.paddles[side]:1-smooth.paddles[side];
+   const lateral=(ownScreenX-.5)*5*.68;
+   const wide=THREE.MathUtils.smoothstep(Math.abs(ownScreenX-.5),.20,.60);
    const cameraBlend=1-Math.exp(-5*dt);
-   camera.position.z=THREE.MathUtils.lerp(camera.position.z,11-3.1*ownReach,cameraBlend);
+   camera.position.x=THREE.MathUtils.lerp(camera.position.x,lateral*1.45*wide,cameraBlend);
+   cameraFocusX=THREE.MathUtils.lerp(cameraFocusX,lateral*.38*wide,cameraBlend);
+   camera.position.z=THREE.MathUtils.lerp(camera.position.z,
+    11-3.1*ownReach+Math.abs(lateral)*.85*wide,cameraBlend);
    camera.position.y=THREE.MathUtils.lerp(camera.position.y,6.35-.45*ownReach,cameraBlend);
    cameraFocusZ=THREE.MathUtils.lerp(cameraFocusZ,.35-.55*ownReach,cameraBlend);
-   camera.lookAt(0,.12,cameraFocusZ);
+   camera.lookAt(cameraFocusX,.12,cameraFocusZ);
+   host!.dataset.cameraX=camera.position.x.toFixed(3);
+   host!.dataset.cameraFocusX=cameraFocusX.toFixed(3);
    host!.dataset.cameraZ=camera.position.z.toFixed(3);
    renderer.render(scene,camera);
    if(!readySent&&paddleModelReady){

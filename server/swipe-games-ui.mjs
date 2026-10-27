@@ -80,6 +80,13 @@ try{
   })));throw error;}
   const edge=await sa.evaluate(el=>({x:Number(el.dataset.selfPaddleX),roll:Number(el.dataset.paddleRoll)}));
   assert.ok(edge.x>1.1,"Drag should move the paddle past the camera edge: "+JSON.stringify(edge));
+  await a.waitForFunction(()=>{
+   const scene=document.querySelector(".pong-scene-3d");
+   const x=Number(scene?.dataset.cameraX),focus=Number(scene?.dataset.cameraFocusX);
+   return x>1.5&&focus>0&&focus<x*.5;
+  },null,{timeout:5000});
+  assert.ok(Number(await sa.getAttribute("data-camera-z"))>11.5,
+   "The camera should step back to keep a wide paddle and the board in view");
   assert.ok(Math.abs(Math.abs(edge.roll)-Math.PI/2)>.35,
    "Paddle should rotate away from its upright center angle: "+JSON.stringify(edge));
   const powerHandle=await a.waitForFunction(()=>window.__pongMaxPower>.16?window.__pongMaxPower:false,

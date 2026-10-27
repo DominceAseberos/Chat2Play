@@ -28,7 +28,7 @@ export type PongView={
   dragging:[boolean,boolean];swipe:[number,number];lastHit:[number,number];
   hitPower:[number,number];netHits:number;
 };
-export const PONG_PADDLE_HALF = 0.16;
+export const PONG_PADDLE_HALF = 0.23;
 export const PONG_RADIUS = 0.014;
 export const PONG_WIN_SCORE = 11;
 export const PONG_SIDE_REACH = 0.35;
@@ -231,22 +231,25 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
    if(Math.abs(ball.y-p.paddles[side])>PONG_PADDLE_HALF+PONG_RADIUS)continue;
    if(p.lastHitter===side||p.bounceQueue.length)continue;
    const drag=p.drag[side];
-   // An aligned but idle paddle is not a strike. A recent released swipe can
-   // still connect as the ball reaches the blade a fraction later.
-   if(drag.travel<=.01||now-drag.lastAt>280)continue;
+   // A near miss during a deliberate stroke still connects. Holding an idle
+   // paddle in place does not return the ball.
+   if(drag.travel<=.008||now-drag.lastAt>(drag.active?460:360))continue;
    ball.x=collisionX;
    const offset=Math.max(-1,Math.min(1,(ball.y-p.paddles[side])/PONG_PADDLE_HALF));
    const approach=Math.hypot(ball.y-drag.startY,ball.x-drag.startDepth)-
     Math.hypot(ball.y-p.paddles[side],ball.x-p.depths[side]);
    const power=drag.travel>.01?
     pongSwipePower(drag.speed,drag.travel,approach,now-drag.lastAt):.12;
-   // Drag speed and travel produce the impulse; aim comes from blade offset.
-   const speed=Math.min(.95,Math.max(.36,Math.hypot(ball.vx,ball.vy))*(1.02+.70*power));
-   const angle=offset*.73+drag.direction*power*.12;
-   ball.vx=(side===0?1:-1)*Math.max(.26,speed*Math.cos(angle));
-   ball.vy=speed*Math.sin(angle);
+   // Place a forgiving return on the far half. Faster strokes shorten its
+   // flight, while the required lift changes with contact height and depth.
+   const flightTime=.98-.12*power;
+   const landingX=side===0?.74:.26;
+   const landingY=Math.max(.14,Math.min(.86,
+    ball.y+offset*.19+drag.direction*power*.05));
+   ball.vx=(landingX-ball.x)/flightTime;
+   ball.vy=(landingY-ball.y)/flightTime;
    ball.h=Math.max(ball.h,.18);
-   ball.vh=.68+.27*power;
+   ball.vh=(BALL_FLOOR-ball.h-GRAVITY*flightTime*flightTime/2)/flightTime;
    p.lastHit[side]=now;p.hitPower[side]=power;
    p.lastHitter=side;p.bounceQueue=[other(side)];p.serveActive=false;
    drag.startY=p.paddles[side];drag.startDepth=p.depths[side];
