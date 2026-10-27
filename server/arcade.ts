@@ -146,7 +146,11 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
    const edge=side===0?.05:.95;
    const toward=side===0?ball.vx<0:ball.vx>0;
    const collisionX=side===0?edge+PONG_RADIUS:edge-PONG_RADIUS;
-   if(!toward||(side===0?ball.x>collisionX:ball.x<collisionX))continue;
+   // A held paddle is winding up, not striking. The ball must cross the
+   // paddle plane after release; a late release cannot pull it back.
+   const crossed=side===0?previousX>collisionX&&ball.x<=collisionX:
+    previousX<collisionX&&ball.x>=collisionX;
+   if(!toward||!crossed||p.chargeStarted[side]!==null)continue;
    if(Math.abs(ball.y-p.paddles[side])>PONG_PADDLE_HALF+PONG_RADIUS)continue;
    ball.x=collisionX;
    const offset=Math.max(-1,Math.min(1,(ball.y-p.paddles[side])/PONG_PADDLE_HALF));

@@ -2,6 +2,7 @@ import {useEffect,useRef} from "react";
 import * as THREE from "three";
 import type {Game,Side} from "./Pieces";
 import {MAX_SMASH_CHARGE_MS} from "./pongTiming";
+import {pongContactPose,type PongContactPose} from "./pongSwing";
 
 type Pong=NonNullable<Game["pong"]>;
 type Props={side:Side;snapshot:Pong;onPaddle:(value:number)=>void;
@@ -126,7 +127,12 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   t.visible=false;trajectory.push(t);scene.add(t);
  }
  const history:Array<THREE.Vector3>=[];
- let lastHistory=0,smashAt=0,remoteSmashAt=0,remoteCharged=false,chargeLocalAt=0,readySent=false;
+ let lastHistory=0,remoteCharged=false,chargeLocalAt=0,readySent=false;
+ const strikeAt=[0,0],lastPaddlePower=[0,0],lastReleaseAt=[0,0];
+ const strikePose:[PongContactPose,PongContactPose]=[
+  pongContactPose(snapshot.ball,0,snapshot.paddles[0]),
+  pongContactPose(snapshot.ball,1,snapshot.paddles[1])];
+ let observedSnapshot=latest.current;
   const resize=()=>{
    const w=host.clientWidth,h=host.clientHeight;
    if(!w||!h)return;
@@ -170,7 +176,17 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    if(e.pointerId===id){
     // The release position must reach the server even if the last move was throttled.
     if(activeRef.current)input(e,true);
-    down=false;id=-1;smashAt=performance.now();chargeLocalAt=0;
+    const releasedAt=performance.now();
+    lastPaddlePower[side]=Math.min(1,(releasedAt-chargeLocalAt)/MAX_SMASH_CHARGE_MS);
+    lastReleaseAt[side]=releasedAt;
+    down=false;id=-1;chargeLocalAt=0;
+    const current=latest.current,edge=side===0?.05:.95;
+    const incoming=side===0?current.ball.vx<0:current.ball.vx>0;
+    if(incoming&&Math.abs(current.ball.x-edge)<.25){
+     strikeAt[side]=releasedAt;
+     strikePose[side]=pongContactPose(current.ball,side,
+      localPaddleTarget??current.paddles[side],lastPaddlePower[side]);
+    }
     lastInputX=null;
     if(host.hasPointerCapture(e.pointerId))host.releasePointerCapture(e.pointerId);
     if(activeRef.current)chargeCallback.current(false);
@@ -184,6 +200,20 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    const dt=Math.min((now-previous)/1000,.06);previous=now;
    localLeanMomentum*=Math.exp(-(down?2.5:10)*dt);
    const next=latest.current;
+   if(next!==observedSnapshot){
+    const before=observedSnapshot.ball,after=next.ball;
+    for(const player of [0,1] as const){
+     const rebound=player===0?before.vx<0&&after.vx>0&&after.x<.21:
+      before.vx>0&&after.vx<0&&after.x>.79;
+     const chargedHit=next.lastSmash[player]>observedSnapshot.lastSmash[player];
+     if(rebound||chargedHit){
+      strikeAt[player]=now;
+      const strikePower=now-lastReleaseAt[player]<1300?lastPaddlePower[player]:0;
+      strikePose[player]=pongContactPose(before,player,next.paddles[player],strikePower);
+     }
+    }
+    observedSnapshot=next;
+   }
    const gap=Math.hypot(next.ball.x-smooth.x,next.ball.y-smooth.y);
    const blend=1-Math.exp(-19*dt);
    if(gap>.15){smooth.x=next.ball.x;smooth.y=next.ball.y;}
@@ -195,7 +225,9 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
     smooth.paddles[player]=THREE.MathUtils.lerp(smooth.paddles[player],paddleTarget,
      1-Math.exp(-(useLocal?40:24)*dt));
     const sx=side===0?smooth.paddles[player]:1-smooth.paddles[player];
-    paddles[player].position.set((sx-.5)*5.0,.62,player===side?4.48:-4.48);
+    paddles[player].position.x=(sx-.5)*5.0;
+    // The visible blade sits at the same end plane as the server collision.
+    paddles[player].position.z=player===side?3.6:-3.6;
     // Lean into the actual travel direction, then return upright at rest.
     // Positive Z rotation moves the top of the blade left on screen.
     const horizontalSpeed=(sx-previousScreenX[player])/Math.max(dt,.001);
@@ -203,29 +235,55 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
     const targetLean=player===side?localLeanMomentum:
      THREE.MathUtils.clamp(-horizontalSpeed*.32,-.38,.38);
     paddleLean[player]=THREE.MathUtils.lerp(paddleLean[player],targetLean,1-Math.exp(-14*dt));
-    paddles[player].rotation.z=paddleLean[player];
     const power=player===side&&down?Math.min(1,(now-chargeLocalAt)/MAX_SMASH_CHARGE_MS):(next.charge?.[player]??0);
+    if(power>.015)lastPaddlePower[player]=power;
     // Detect remote release using authoritative charge/shot updates. Both
     // players see the other paddle wind up and swing.
     if(player!==side){
       if(power>.015)remoteCharged=true;
-      if(remoteCharged&&power===0){remoteSmashAt=now;remoteCharged=false;}
+      if(remoteCharged&&power===0){
+       remoteCharged=false;
+       lastReleaseAt[player]=now;
+       const edge=player===0?.05:.95;
+       const incoming=player===0?next.ball.vx<0:next.ball.vx>0;
+       if(strikeAt[player]!==now&&incoming&&Math.abs(next.ball.x-edge)<.25){
+        strikeAt[player]=now;
+        strikePose[player]=pongContactPose(next.ball,player,next.paddles[player],lastPaddlePower[player]);
+       }
+      }
     }
-    const swing=player===side?Math.max(0,1-(now-smashAt)/430):
-      Math.max(0,1-(now-remoteSmashAt)/430);
-    const forward=swing>0?Math.sin(Math.PI*swing)*.92:0;
-    const target=power*.24-forward;
-    paddles[player].rotation.x=THREE.MathUtils.lerp(paddles[player].rotation.x,target,1-Math.exp(-24*dt));
-    // Follow the incoming ball's true simulated height during the strike.
     const edge=player===0?.05:.95;
-    const near=Math.abs(next.ball.x-edge)<.22;
-    const targetY=near?Math.max(.56,Math.min(1.12,.54+(next.ball.h-.09)*2.0)):.62;
+    const incoming=player===0?next.ball.vx<0:next.ball.vx>0;
+    const near=incoming?THREE.MathUtils.clamp((.44-Math.abs(next.ball.x-edge))/.36,0,1):0;
+    const livePose=pongContactPose(next.ball,player,smooth.paddles[player],lastPaddlePower[player]);
+    const pose=strikePose[player];
+    const progress=THREE.MathUtils.clamp((now-strikeAt[player])/480,0,1);
+    const swing=strikeAt[player]>0&&progress<1?Math.sin(Math.PI*progress):0;
+    // Low balls get an upward scoop, high balls a downward smash, and wide
+    // balls rotate the blade and shoulder toward their actual contact point.
+    const targetPitch=power*.22+livePose.pitch*near*.34+
+     swing*(pose.pitch-pose.low*.28+pose.high*.34-.12);
+    paddles[player].rotation.x=THREE.MathUtils.lerp(paddles[player].rotation.x,
+     THREE.MathUtils.clamp(targetPitch,-.95,.95),1-Math.exp(-20*dt));
+    const targetYaw=livePose.yaw*near*.55+pose.yaw*swing*.72;
+    paddles[player].rotation.y=THREE.MathUtils.lerp(paddles[player].rotation.y,
+     THREE.MathUtils.clamp(targetYaw,-.62,.62),1-Math.exp(-16*dt));
+    const targetSideLean=paddleLean[player]+livePose.lean*near*.3+pose.lean*swing;
+    paddles[player].rotation.z=THREE.MathUtils.lerp(paddles[player].rotation.z,
+     targetSideLean,1-Math.exp(-16*dt));
+    const targetY=THREE.MathUtils.lerp(.62,livePose.height,near*(power>.01?.32:.76));
+    const contactY=THREE.MathUtils.lerp(targetY,pose.height,swing);
     paddles[player].position.y=THREE.MathUtils.lerp(paddles[player].position.y,
-      targetY+power*.12+forward*.07,1-Math.exp(-15*dt));
+      contactY+power*.1+swing*(pose.low*(.1+.3*progress)+pose.high*(.25-.55*progress)),
+      1-Math.exp(-15*dt));
     if(player===side){
       host!.parentElement?.style.setProperty("--charge",String(power));
       host!.dataset.power=power.toFixed(2);
       host!.dataset.swinging=swing>0?"true":"false";
+      host!.dataset.swingKind=swing>0?pose.kind:"idle";
+      host!.dataset.paddleYaw=paddles[player].rotation.y.toFixed(3);
+      host!.dataset.paddlePitch=paddles[player].rotation.x.toFixed(3);
+      host!.dataset.paddleHeight=paddles[player].position.y.toFixed(3);
     }
     host!.dataset[player===side?"selfPaddleX":"opponentPaddleX"]=sx.toFixed(3);
     host!.dataset[player===side?"selfPaddleTilt":"opponentPaddleTilt"]=paddleLean[player].toFixed(3);
