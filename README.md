@@ -1,6 +1,21 @@
 # Chat2Play 🎮💬
 **Meet strangers. Break the ice. Play together.**
 
+## Deploy a single-instance demo
+
+`render.yaml` configures one Render Node web service named `chat2app`.
+Connect this repository to Render as a Blueprint. It installs dependencies,
+builds the Vite client, and starts the Express and Socket.IO server on Render's
+`PORT`. The client and WebSocket server share one HTTPS origin, so no separate
+`VITE_API_URL` is needed. Check `/api/health` after deployment and test two
+browser sessions before sharing the URL.
+
+This configuration uses Render's free instance for a development demo. The
+instance can sleep after inactivity, and all chats, rooms, game state, and
+reports are lost on restart. Keep the service at one instance until the
+matchmaking and room state have been moved out of process memory. The public
+stranger-chat safety work described below still applies before an open launch.
+
 An Android/iPhone-friendly, React + TypeScript stranger-chat and synchronous mini-game prototype.
 
 ## Run locally
