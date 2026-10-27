@@ -426,17 +426,18 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    // Server-snapshot velocity forms the forward trajectory. Client only
    // draws predictions; collisions, points and swipe power remain authoritative.
    let px=next.ball.x,py=next.ball.y,ph=next.ball.h,pvh=next.ball.vh;
-   let pvx=next.ball.vx,pvy=next.ball.vy;
+   let pvx=next.ball.vx,pvy=next.ball.vy,pSpin=next.ball.sideSpin??0;
    trajectory.forEach((dot,i)=>{
     dot.visible=Math.abs(pvx)>.05;
     if(!dot.visible)return;
     const step=.075;
     const prev=px;
-    px+=pvx*step;py+=pvy*step;pvh-=2.20*step;ph+=pvh*step;
+    px+=pvx*step;pvy+=pSpin*step;py+=pvy*step;
+    pSpin*=Math.exp(-.38*step);pvh-=2.20*step;ph+=pvh*step;
     if(ph<.09){
      if(px<0||px>1||py<0||py>1){
       if(ph<=-.17){dot.visible=false;return;}
-     }else{ph=.09;pvh=Math.max(.90,-pvh*.9);}
+     }else{ph=.09;pvh=Math.max(.90,-pvh*.9);pSpin*=.6;}
     }
     if((prev-.5)*(px-.5)<=0&&py>=0&&py<=1&&ph<.26){dot.visible=false;return;}
     const pos=toView(px,py);

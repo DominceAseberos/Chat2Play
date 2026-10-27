@@ -90,10 +90,10 @@ function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay,onChat,quest
    </div>}
    {state.serving&&game.phase==="playing"&&<div className="pong-serve-note" role="status" aria-live="polite">
     {state.serveCountdown>0?<><strong>{state.serveCountdown}</strong><span>{state.server===side?"Get ready to serve":"Partner serving soon"}</span></>:
-     <><strong>Serve!</strong><span>{state.server===side?"Swipe forward into the ball":"Waiting for your partner's serve"}</span></>}
+     <><strong>Serve!</strong><span>{state.server===side?"Swipe diagonally forward to aim left or right":"Waiting for your partner's serve"}</span></>}
    </div>}
    <div className="pong-swipe-hud" aria-label="Swipe strength">
-    <span>{state.serving&&state.server===side?"SWIPE FORWARD INTO THE BALL":"DRAG INTO THE BALL"}</span><div className="pong-swipe-track"><i/></div>
+    <span>{state.serving&&state.server===side?"SWIPE FORWARD · ANGLE TO AIM":"DRAG INTO THE BALL"}</span><div className="pong-swipe-track"><i/></div>
     <small>Faster, longer swipes hit harder</small>
    </div>
    {game.phase==="finished"&&<div className="pong-result-float"><ResultBanner game={game} side={side} onReplay={onReplay} onChat={onChat} questionPending={questionPending}/></div>}

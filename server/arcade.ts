@@ -22,7 +22,8 @@ export type PongState = {
   targetPoints:5|10;
 };
 type PongDrag={active:boolean;startY:number;startDepth:number;lastAt:number;
- speed:number;travel:number;direction:number;lateralSpeed:number;forwardStroke:number;serveForwardTravel:number};
+ speed:number;travel:number;direction:number;lateralSpeed:number;forwardStroke:number;
+ serveForwardTravel:number;serveLateralTravel:number};
 export type PongView={
   ball:{x:number;y:number;h:number;vx:number;vy:number;vh:number;sideSpin?:number};
   paddles:[number,number];depths:[number,number];scores:[number,number];serving:boolean;
@@ -97,7 +98,7 @@ function serve(pong:PongState,server:Side,now=Date.now()){
   pong.previousPaddles=[...pong.paddles];
   pong.drag.forEach((drag,side)=>{drag.startY=pong.paddles[side];
    drag.startDepth=pong.depths[side];drag.speed=0;drag.travel=0;drag.lateralSpeed=0;
-   drag.forwardStroke=0;drag.serveForwardTravel=0;});
+   drag.forwardStroke=0;drag.serveForwardTravel=0;drag.serveLateralTravel=0;});
 }
 function stageServeBall(pong:PongState){
  const side=pong.server,depth=pong.depths[side];
@@ -109,15 +110,23 @@ function stageServeBall(pong:PongState){
  pong.ball.h=.24;pong.ball.vx=0;pong.ball.vy=0;pong.ball.vh=0;pong.ball.sideSpin=0;
 }
 function launchServe(pong:PongState,now:number){
- const side=pong.server,ball=pong.ball;
+ const side=pong.server,ball=pong.ball,drag=pong.drag[side];
+ // Only the sideways component of the forward stroke steers the serve.
+ // A sideways setup before that stroke gives a smaller amount of aim.
+ const aim=Math.max(-1,Math.min(1,
+  drag.serveLateralTravel/Math.max(drag.serveForwardTravel,.08)*.8+
+  (pong.paddles[side]-drag.startY)*.9));
+ const targetY=Math.max(.08,Math.min(.92,ball.y+aim*.3));
  ball.vx=(side===0?1:-1)*.52;
- ball.vy=Math.max(-.07,Math.min(.07,pong.drag[side].direction*.06));
+ // The first bounce is on our side and the next is across the net. Account
+ // for the gentle sidespin curve while aiming for that second bounce.
+ ball.sideSpin=aim*.10;
+ ball.vy=(targetY-ball.y)/1.38-ball.sideSpin*.55;
  ball.vh=.18;
- ball.sideSpin=0;
  pong.servePending=false;pong.serveBallHeld=false;pong.lastTick=now;
  pong.lastHit[side]=now;pong.hitPower[side]=Math.min(1,.3+pong.drag[side].serveForwardTravel*2);
  pong.previousDepths=[...pong.depths];pong.previousPaddles=[...pong.paddles];
- pong.drag[side].speed=0;pong.drag[side].travel=0;
+ drag.speed=0;drag.travel=0;drag.lateralSpeed=0;
 }
 export function createPong(targetPoints:5|10=PONG_WIN_SCORE):PongState{
   const now=Date.now();
@@ -129,7 +138,8 @@ export function createPong(targetPoints:5|10=PONG_WIN_SCORE):PongState{
     scores:[0,0],serveAt:now,lastTick:now,
     drag:[0,1].map((side)=>({active:false,startY:.5,
      startDepth:side===0?PONG_REST_DEPTH:1-PONG_REST_DEPTH,
-     lastAt:now,speed:0,travel:0,direction:0,lateralSpeed:0,forwardStroke:0,serveForwardTravel:0})) as [PongDrag,PongDrag],
+     lastAt:now,speed:0,travel:0,direction:0,lateralSpeed:0,forwardStroke:0,
+     serveForwardTravel:0,serveLateralTravel:0})) as [PongDrag,PongDrag],
     lastHit:[0,0],hitPower:[0,0],netHits:0,
     firstServer,server:firstServer,lastHitter:firstServer,bounceQueue:[],serveActive:false,servePending:false,serveBallHeld:false,
     targetPoints
@@ -171,8 +181,11 @@ export function movePaddle(p:PongState,side:Side,input:PongPaddleInput,now=Date.
   if(drag.active){
    const forwardStep=hasStroke?Math.max(0,rawStroke-drag.forwardStroke):Math.max(0,forwardDepth);
    if(hasStroke)drag.forwardStroke=Math.max(drag.forwardStroke,rawStroke);
-   if(p.servePending&&p.server===side&&now>=p.serveAt)
+   if(p.servePending&&p.server===side&&now>=p.serveAt){
     drag.serveForwardTravel=Math.min(3,drag.serveForwardTravel+forwardStep);
+    if(forwardStep>.0001)
+     drag.serveLateralTravel=Math.max(-.5,Math.min(.5,drag.serveLateralTravel+delta));
+   }
   }
   if(drag.active&&distance>.0001){
    const elapsed=Math.max(.016,Math.min((now-drag.lastAt)/1000,.2));
@@ -202,7 +215,8 @@ export function setPongDragging(p:PongState,side:Side,active:boolean,now=Date.no
   const drag=p.drag[side];
   if(active&&!drag.active){
    Object.assign(drag,{active:true,startY:p.paddles[side],startDepth:p.depths[side],
-    lastAt:now,speed:0,travel:0,direction:0,lateralSpeed:0,forwardStroke:0,serveForwardTravel:0});
+    lastAt:now,speed:0,travel:0,direction:0,lateralSpeed:0,forwardStroke:0,
+    serveForwardTravel:0,serveLateralTravel:0});
    if(p.servePending&&p.server===side&&now>=p.serveAt){
     stageServeBall(p);p.serveBallHeld=true;
    }

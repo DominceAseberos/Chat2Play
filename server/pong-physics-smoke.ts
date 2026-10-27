@@ -59,6 +59,39 @@ assert.equal(mirrored.ball.vx,0);
 movePaddle(mirrored,1,{y:.3,depth:.54,forwardStroke:.11},fixed+40);
 assert.ok(mirrored.ball.vx<0&&!mirrored.servePending,"The far player can also serve from the limit");
 console.log("PASS: either server can aim sideways, then serve by swiping forward from the limit.");
+function angledServe(side:0|1,lateral:number){
+ const p=createPong();p.server=side;p.firstServer=side;p.lastHitter=side;
+ p.bounceQueue=[side,side===0?1:0];p.serveAt=fixed;p.lastTick=fixed;
+ setPongDragging(p,side,true,fixed+10);
+ movePaddle(p,side,{y:.5+lateral,depth:side===0?.05:.95,forwardStroke:.11},fixed+30);
+ assert.ok(!p.servePending,"Forward movement must launch a diagonal serve");
+ const launchY=p.ball.y,vy=p.ball.vy,spin=p.ball.sideSpin??0;
+ let own=false,landingY:number|null=null;
+ for(let at=fixed+55;at<fixed+2600;at+=25){
+  tickPong(p,at);
+  if(p.bounceQueue.length===1)own=true;
+  if(own&&p.bounceQueue.length===0){landingY=p.ball.y;break;}
+  if(p.scores[0]||p.scores[1])break;
+ }
+ assert.ok(own&&landingY!==null&&p.scores[0]===0&&p.scores[1]===0,
+  "A diagonal serve must bounce on both halves: "+JSON.stringify({ball:p.ball,scores:p.scores}));
+ return {launchY,vy,spin,landingY};
+}
+const straightServe=angledServe(0,0);
+const rightServe=angledServe(0,.14);
+const leftServe=angledServe(0,-.14);
+const oppositeServe=angledServe(1,.14);
+assert.ok(Math.abs(straightServe.vy)<.001&&Math.abs(straightServe.spin)<.001,
+ "A straight forward serve should stay straight");
+assert.ok(rightServe.vy>0&&rightServe.spin>0&&
+ rightServe.landingY!>rightServe.launchY+.18,
+ "Forward-right swipe must send the serve diagonally right");
+assert.ok(leftServe.vy<0&&leftServe.spin<0&&
+ leftServe.landingY!<leftServe.launchY-.18,
+ "Forward-left swipe must send the serve diagonally left");
+assert.ok(oppositeServe.vy>0&&oppositeServe.landingY!>oppositeServe.launchY+.18,
+ "The other server must get the same canonical sideways aim");
+console.log("PASS: diagonal serves steer toward their swipe direction and bounce legally on both sides.");
 function draggedHit(duration:number,travel:number){
  const p=createPong();p.serveAt=0;p.servePending=false;
  p.lastHitter=1;p.bounceQueue=[];
