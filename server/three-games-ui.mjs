@@ -52,7 +52,10 @@ for(const [width,height] of pairs){
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/test-3d-pong-"+width+"-center.png"});
   const box=await sceneA.boundingBox();
   const controlY=box.y+box.height*.84;
+  await a.mouse.move(box.x+box.width*.5,controlY);
+  await a.mouse.down();
   await a.mouse.move(box.x+box.width*.72,controlY);
+  await a.mouse.up();
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)>.62,null,{timeout:7000});
   await b.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.opponentPaddleX)<.38,null,{timeout:7000});
   if(width<700){
@@ -60,7 +63,8 @@ for(const [width,height] of pairs){
    await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)<.44,null,{timeout:7000});
    await b.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.opponentPaddleX)>.56,null,{timeout:7000});
   }
-  await a.mouse.move(box.x+box.width*.18,box.y+box.height*.84);await a.mouse.down();await a.mouse.up();
+  await a.mouse.move(box.x+box.width*.35,box.y+box.height*.84);
+  await a.mouse.down();await a.mouse.move(box.x+box.width*.18,box.y+box.height*.84);await a.mouse.up();
   await a.waitForTimeout(380);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)<.29,null,{timeout:7000});
   await b.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.opponentPaddleX)>.70,null,{timeout:7000});

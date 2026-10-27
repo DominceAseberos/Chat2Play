@@ -27,7 +27,8 @@ export type Game = {
   memory?:{cards:("sun"|"moon"|"heart"|"star"|"gem"|"zap"|null)[];matched:boolean[];revealed:number[];scores:[number,number];turn:Side;resolving:boolean};
   pong?:{ball:{x:number;y:number;h:number;vx:number;vy:number;vh:number};
    paddles:[number,number];scores:[number,number];serving:boolean;
-   charge:[number,number];shot:[number,number];lastSmash:[number,number];netHits:number};
+   dragging:[boolean,boolean];swipe:[number,number];lastHit:[number,number];
+   hitPower:[number,number];netHits:number};
   rps?:{targetWins:number;scores:[number,number];round:number;stage:"choosing"|"chant"|"reveal";
     roundEndsAt:number;chantEndsAt:number;revealEndsAt:number;roundWinner?:Side|"draw";
     pausedBy:[boolean,boolean];pauseAt:number;

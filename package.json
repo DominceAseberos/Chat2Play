@@ -36,7 +36,7 @@
     "test:3d:games": "node server/three-games-ui.mjs",
     "test:pong:physics": "tsx server/pong-physics-smoke.ts",
     "test:rps:rounds": "node server/rps-rounds-ui.mjs",
-    "test:games:charged": "node server/charged-games-ui.mjs"
+    "test:games:swipe": "node server/swipe-games-ui.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",

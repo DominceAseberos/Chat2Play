@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { Server, type Socket } from "socket.io";
 import { z } from "zod";
 import { bestMatchPair, FALLBACK_WAIT_MS, type MatchProfile } from "./matching.js";
-import { createMemory, createPong, memoryView, flipMemory, resolveMemoryMismatch, memoryWinner, pongView, movePaddle, setPongCharge, tickPong, type MemoryState, type PongState } from "./arcade.js";
+import { createMemory, createPong, memoryView, flipMemory, resolveMemoryMismatch, memoryWinner, pongView, movePaddle, setPongDragging, tickPong, type MemoryState, type PongState } from "./arcade.js";
 import {createForehead,foreheadView,askCategory,answerCategory,submitGuess,skipForehead,advanceTurn,validForeheadOptions,isFinished,result,noteChatQuestion,answerChatQuestion,markSpokenCorrect,gestureAnswer,type ForeheadState,type ForeheadOptions} from "./forehead.js";
 import {validGameCategories,type GameCategory} from "./foreheadWordBank.js";
 import {RPS_CHOICE_MS,RPS_CHANT_TOTAL_MS,RPS_REVEAL_MS} from "../src/rpsTiming.js";
@@ -445,13 +445,13 @@ io.on("connection", socket => {
     if(game.pongReady.every(Boolean)){game.phase="playing";game.pong.lastTick=Date.now();game.pong.serveAt=Date.now()+900;}
     emitGame(st.room);
   });
-  socket.on("pong:charge",(raw:unknown)=>{
+  socket.on("pong:drag",(raw:unknown)=>{
     const st=getRoom(socket),game=st?.room.game;
     if(!st||game?.kind!=="pong"||game.phase!=="playing"||!game.pong
       ||!raw||typeof raw!=="object")return;
-    const val=raw as {id?:unknown;holding?:unknown};
-    if(val.id!==game.id||typeof val.holding!=="boolean")return;
-    setPongCharge(game.pong,st.side,val.holding);
+    const val=raw as {id?:unknown;active?:unknown};
+    if(val.id!==game.id||typeof val.active!=="boolean")return;
+    setPongDragging(game.pong,st.side,val.active);
     emitGame(st.room);
   });
   // Ephemeral, validated preview: let both players see each category toggle

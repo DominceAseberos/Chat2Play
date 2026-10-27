@@ -531,7 +531,7 @@ function App(){
     <ArcadeView key={game.id} game={game} side={side}
       onFlip={index=>{if(canChat)socket.emit("memory:flip",index);}}
       onPaddle={y=>{if(canChat)socket.emit("pong:paddle",y);}}
-      onCharge={holding=>{if(canChat)socket.emit("pong:charge",{id:game.id,holding});}}
+      onDrag={active=>{if(canChat)socket.emit("pong:drag",{id:game.id,active});}}
       onSceneReady={()=>{if(canChat)socket.emit("pong:scene-ready",{id:game.id});}}
       onMinimize={()=>setArcadeOpen(false)}
       onClose={requestQuitGame}

@@ -8,7 +8,7 @@ import "./arcade.css";
 type MemorySymbol = "sun" | "moon" | "heart" | "star" | "gem" | "zap";
 type ArcadeProps = {
  game: Game; side: Side; onFlip:(index:number)=>void; onPaddle:(value:number)=>void;
- onCharge:(holding:boolean)=>void;onSceneReady:()=>void;
+ onDrag:(active:boolean)=>void;onSceneReady:()=>void;
  onMinimize:()=>void; onClose:()=>void; onReplay:(kind:Kind)=>void;
 };
 const icons = { sun:Sun, moon:Moon, heart:Heart, star:Star, gem:Gem, zap:Zap };
@@ -65,8 +65,8 @@ export function projectPongForSide(x:number,y:number,side:Side){
 export function paddleFromScreenX(x:number,side:Side){
  return Math.max(0,Math.min(1,side===0?x:1-x));
 }
-function PongArena({game,side,onPaddle,onCharge,onSceneReady,onReplay}:{game:Game;side:Side;
- onPaddle:(value:number)=>void;onCharge:(holding:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void}){
+function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay}:{game:Game;side:Side;
+ onPaddle:(value:number)=>void;onDrag:(active:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void}){
  const state=game.pong;
  if(!state)return null;
  const opponent=side===0?1:0;
@@ -74,7 +74,7 @@ function PongArena({game,side,onPaddle,onCharge,onSceneReady,onReplay}:{game:Gam
   <div className="pong-court">
    <Suspense fallback={<div className="pong-load-screen" role="status">Loading 3D physics engine?</div>}>
     <PongScene3D snapshot={state} side={side} onPaddle={onPaddle}
-     onCharge={onCharge} onReady={onSceneReady} active={game.phase==="playing"}/>
+     onDrag={onDrag} onReady={onSceneReady} active={game.phase==="playing"}/>
    </Suspense>
    <div className="pong-floating-scores" aria-label="Scores, first to five">
     <div className="pong-floating-score opponent"><span>STRANGER</span><strong>{state.scores[opponent]}</strong></div>
@@ -87,16 +87,16 @@ function PongArena({game,side,onPaddle,onCharge,onSceneReady,onReplay}:{game:Gam
      <small>Player 1 {game.sceneReady?.[0]?"?":"?"} ? Player 2 {game.sceneReady?.[1]?"?":"?"}</small>
    </div>}
    {state.serving&&game.phase==="playing"&&<span className="pong-serve-note">Next serve</span>}
-   <div className="pong-charge-hud" aria-label="Smash power">
-    <span>HOLD TO CHARGE - RELEASE TO SMASH</span><div className="pong-charge-track"><i/></div>
-    <small>Maximum power in 1 second</small>
+   <div className="pong-swipe-hud" aria-label="Swipe strength">
+    <span>DRAG INTO THE BALL</span><div className="pong-swipe-track"><i/></div>
+    <small>Faster, longer swipes hit harder</small>
    </div>
    {game.phase==="finished"&&<div className="pong-result-float"><ResultBanner game={game} side={side} onReplay={onReplay}/></div>}
   </div>
-  <div className="pong-controls"><span className="pong-my-paddle"><span className="paddle-key bottom"/> Your paddle is at the bottom</span><span>Drag left / right to move</span></div>
+  <div className="pong-controls"><span className="pong-my-paddle"><span className="paddle-key bottom"/> Your paddle is at the bottom</span><span>Drag toward the ball to strike</span></div>
  </section>;
 }
-export function ArcadeView({game,side,onFlip,onPaddle,onCharge,onSceneReady,onMinimize,onClose,onReplay}:ArcadeProps){
+export function ArcadeView({game,side,onFlip,onPaddle,onDrag,onSceneReady,onMinimize,onClose,onReplay}:ArcadeProps){
  const name=game.kind==="memory"?"Memory Duel":"Ping Pong";
  return <motion.div className="arcade-overlay" role="dialog" aria-label={name} aria-modal="true" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.2}}>
   <motion.div className={"arcade-window"+(game.kind==="pong"?" pong-window":"")} initial={{scale:.96,y:16}} animate={{scale:1,y:0}} exit={{scale:.97,y:10}} transition={{type:"spring",stiffness:330,damping:29}}>
@@ -106,7 +106,7 @@ export function ArcadeView({game,side,onFlip,onPaddle,onCharge,onSceneReady,onMi
    </header>
    <div className={"arcade-content"+(game.kind==="pong"?" pong-content":"")}>
     {game.kind==="memory"&&<div className="arcade-intro"><span className="arcade-live"><i/> MATCH IN PROGRESS</span><h2>Find the perfect pair.</h2><p>Remember the cards. Outmatch your new friend.</p></div>}
-    {game.kind==="pong"?<PongArena game={game} side={side} onPaddle={onPaddle} onCharge={onCharge} onSceneReady={onSceneReady} onReplay={onReplay}/>:game.phase==="finished"?<ResultBanner game={game} side={side} onReplay={onReplay}/>:<MemoryDuel game={game} side={side} onFlip={onFlip}/>}
+    {game.kind==="pong"?<PongArena game={game} side={side} onPaddle={onPaddle} onDrag={onDrag} onSceneReady={onSceneReady} onReplay={onReplay}/>:game.phase==="finished"?<ResultBanner game={game} side={side} onReplay={onReplay}/>:<MemoryDuel game={game} side={side} onFlip={onFlip}/>}
    </div>
    <footer className="arcade-footer"><span><Heart size={15}/> Play nice, have fun.</span><button type="button" onClick={onMinimize}>Minimize and chat <ArrowRight size={16}/></button></footer>
   </motion.div>

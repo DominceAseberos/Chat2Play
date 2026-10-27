@@ -40,26 +40,40 @@ try{
   await a.locator(".pong-load-screen").waitFor({state:"hidden",timeout:16000});
   await b.locator(".pong-load-screen").waitFor({state:"hidden",timeout:16000});
   console.log("PASS PONG scene ready on both players");
+  await sa.evaluate(el=>{
+   window.__pongMaxPower=0;
+   new MutationObserver(()=>{window.__pongMaxPower=Math.max(window.__pongMaxPower,
+    Number(el.dataset.power)||0);}).observe(el,{attributes:true,attributeFilter:["data-power"]});
+  });
   const rect=await sa.boundingBox();
   await a.mouse.move(rect.x+rect.width*.30,rect.y+rect.height*.70);
   await a.mouse.down();await a.waitForTimeout(450);
-  const partialPower=Number(await sa.getAttribute("data-power"));
-  assert.ok(partialPower>.35&&partialPower<.75,"A short hold should build partial power, got "+partialPower);
-  await a.waitForTimeout(650);
-  const power=Number(await sa.getAttribute("data-power"));
-  assert.ok(power>=.99&&power<=1,"Charge should cap at 1.0, got "+power);
-  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/charged-pong-held-"+width+".png"});
+  assert.equal(Number(await sa.getAttribute("data-power")),0,"A stationary press must not charge power");
+  await a.mouse.move(rect.x+rect.width*.44,rect.y+rect.height*.70);
+  await a.mouse.move(rect.x+rect.width*.66,rect.y+rect.height*.70);
+  await a.mouse.move(rect.x+rect.width*.82,rect.y+rect.height*.70);
+  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)>.68,
+   null,{timeout:5000});
+  const edge=await sa.evaluate(el=>({x:Number(el.dataset.selfPaddleX),roll:Number(el.dataset.paddleRoll)}));
+  assert.ok(edge.x>.68,"Drag should move the paddle toward the right edge: "+JSON.stringify(edge));
+  assert.ok(Math.abs(Math.abs(edge.roll)-Math.PI/2)>.35,
+   "Paddle should rotate away from its upright center angle: "+JSON.stringify(edge));
+  const powerHandle=await a.waitForFunction(()=>window.__pongMaxPower>.16?window.__pongMaxPower:false,
+   null,{timeout:5000});
+  const power=Number(await powerHandle.jsonValue());
+  assert.ok(power>.16&&power<=1,"Drag power should rise with movement, got "+power);
+  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-drag-"+width+".png"});
   await a.mouse.up();await a.waitForTimeout(75);
-  assert.equal(await sa.getAttribute("data-swinging"),"true");
-  console.log("PASS PONG long press capped, release animates swing");
+  assert.equal(await sa.getAttribute("data-dragging"),"false");
+  console.log("PASS PONG stationary press stays weak; dragging generates strike power");
   await a.waitForTimeout(240);
   const ballHeight=Number(await sa.getAttribute("data-ball-height"));
   assert.ok(Number.isFinite(ballHeight)&&ballHeight>=.09,"Physical ball height missing "+ballHeight);
   assert.equal(await sa.locator("canvas").count(),1);
   const calls=Number(await sa.getAttribute("data-draw-calls"));
   assert.ok(calls<115,"WebGL mobile budget "+calls);
-  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/charged-pong-release-"+width+".png"});
-  console.log("PASS PONG physical height, 3D trail, shot and graphics budget",calls);
+  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-release-"+width+".png"});
+  console.log("PASS PONG physical height, 3D trail, swipe and graphics budget",calls);
   if(process.env.C2P_ONLY_GAME!=="pong"){
   await a.getByRole("button",{name:"End game"}).click();
   await a.getByRole("button",{name:"Quit game",exact:false}).last().click();

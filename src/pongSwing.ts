@@ -1,12 +1,42 @@
 export type PongSwingKind="scoop"|"lift"|"reach-left"|"reach-right"|"drive"|"smash";
 
 type Ball={y:number;h:number};
+type FlyingBall=Ball&{x:number;vx:number;vy:number;vh:number};
 export type PongContactPose={kind:PongSwingKind;height:number;low:number;high:number;
  lateral:number;yaw:number;lean:number;pitch:number};
 export type PongSwingMotion={side:number;vertical:number;forward:number;
  pitch:number;yaw:number;roll:number};
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
+
+export function paddleSideAngle(screenX:number,own:boolean){
+ const edge=clamp((screenX-.5)/.38,-1,1);
+ return own?-Math.PI/2-edge*Math.PI/2:Math.PI/2-edge*Math.PI/2;
+}
+
+export function predictPongContact(ball:FlyingBall,side:0|1){
+ const target=side===0?.064:.936;
+ const incoming=side===0?ball.vx<-.001:ball.vx>.001;
+ if(!incoming)return null;
+ const eta=(target-ball.x)/ball.vx;
+ if(eta<0||eta>1.4)return null;
+ let y=ball.y,h=ball.h,vy=ball.vy,vh=ball.vh;
+ const steps=Math.max(1,Math.ceil(eta/.012)),step=eta/steps;
+ for(let i=0;i<steps;i++){
+  y+=vy*step;vh-=2.2*step;h+=vh*step;
+  if(y<.014){y=.014;vy=Math.abs(vy)*.94;}
+  if(y>.986){y=.986;vy=-Math.abs(vy)*.94;}
+  if(h<.09){h=.09;vh=Math.max(.32,-vh*.82);}
+ }
+ return {y,h,eta};
+}
+
+export function pongSwipePower(speed:number,travel:number,approach:number,ageMs=0){
+ const fresh=clamp(1-ageMs/280,0,1);
+ const aligned=approach>0?1:.32;
+ return clamp(.12+fresh*aligned*(.48*clamp(speed/1.6,0,1)+
+  .24*clamp(travel/.26,0,1))+.16*clamp(approach/.18,0,1),.12,1);
+}
 
 // Coordinates are mirrored for player 1, so left/right always mean what the
 // person at the near end of this camera sees.

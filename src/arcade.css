@@ -155,19 +155,19 @@
 .pong-content .pong-scene-3d canvas{display:block;width:100%;height:100%;touch-action:none}
 .pong-content .pong-court{background:#15152f}
 
-.pong-content .pong-charge-hud{position:absolute;z-index:9;left:50%;bottom:14px;transform:translateX(-50%);
+.pong-content .pong-swipe-hud{position:absolute;z-index:9;left:50%;bottom:14px;transform:translateX(-50%);
  width:min(82%,265px);padding:7px 10px;border:1px solid #ab9fd14f;border-radius:12px;
  background:#1d1c3fbd;color:#e8dffe;text-align:center;pointer-events:none;display:grid;gap:3px}
-.pong-charge-hud>span{font-size:9px;letter-spacing:.5px;font-weight:900}
-.pong-charge-hud small{font-size:9px;color:#d4c5ea}
-.pong-charge-track{height:8px;border-radius:10px;overflow:hidden;background:#ffffff27}
-.pong-charge-track i{height:100%;display:block;width:calc(var(--charge,0) * 100%);min-width:0;
+.pong-swipe-hud>span{font-size:9px;letter-spacing:.5px;font-weight:900}
+.pong-swipe-hud small{font-size:9px;color:#d4c5ea}
+.pong-swipe-track{height:8px;border-radius:10px;overflow:hidden;background:#ffffff27}
+.pong-swipe-track i{height:100%;display:block;width:calc(var(--swipe-power,0) * 100%);min-width:0;
  background:linear-gradient(90deg,#83ecf2,#fcbd83);border-radius:10px;transition:width 75ms linear}
 .pong-content .pong-load-screen{position:absolute;z-index:13;inset:0;display:flex;flex-direction:column;
  justify-content:center;align-items:center;gap:13px;padding:24px;background:#1a183bdd;
  color:#fff;font-size:16px;font-weight:900;text-align:center}
 .pong-load-screen small{color:#d9c9fa;font-size:11px;font-weight:700}
-@media(max-height:620px){.pong-content .pong-charge-hud{bottom:6px;padding:5px}}
+@media(max-height:620px){.pong-content .pong-swipe-hud{bottom:6px;padding:5px}}
 
 /* Keep the 3D arena visible when the match ends. */
 .pong-content .pong-result-float{position:absolute;z-index:15;left:12px;right:12px;top:43%;transform:translateY(-50%);pointer-events:none}

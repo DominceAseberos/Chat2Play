@@ -1,40 +1,53 @@
 import assert from "node:assert/strict";
-import {createPong,pongView,setPongCharge,tickPong,MAX_SMASH_CHARGE_MS} from "./arcade.js";
-import {pongContactPose,pongSwingMotion} from "../src/pongSwing.js";
+import {createPong,pongView,movePaddle,setPongDragging,tickPong} from "./arcade.js";
+import {paddleSideAngle,pongContactPose,pongSwingMotion,predictPongContact} from "../src/pongSwing.js";
 const fixed=10_000;
-const partial=createPong();
-setPongCharge(partial,0,true,fixed);
-assert.equal(pongView(partial,fixed+250).charge[0],.25,"A short hold should build some power");
-assert.equal(pongView(partial,fixed+750).charge[0],.75,"A longer hold should build more power");
-setPongCharge(partial,0,false,fixed+600);
-assert.equal(partial.shot[0]?.power,.6,"Release should preserve proportional power");
-const p=createPong();
-p.serveAt=0;p.lastTick=fixed+MAX_SMASH_CHARGE_MS*2;p.ball={x:.069,y:.5,vx:-.40,vy:0,h:.38,vh:0};p.paddles=[.5,.5];
-setPongCharge(p,0,true,fixed);
-assert.equal(pongView(p,fixed+MAX_SMASH_CHARGE_MS*2).charge[0],1);
-setPongCharge(p,0,false,fixed+MAX_SMASH_CHARGE_MS*2);
-assert.equal(p.shot[0]?.power,1,"2x hold must cap to 100%");
-const result=tickPong(p,fixed+MAX_SMASH_CHARGE_MS*2+33);
-assert.equal(result,null);
-assert.ok(p.ball.vx>0,"Paddle must reverse ball velocity on collision");
-assert.ok(Math.hypot(p.ball.vx,p.ball.vy)<=.951,"Impact impulse exceeds speed cap");
-assert.ok(p.ball.vh>0,"Paddle must send ball upward");
-assert.ok(p.lastSmash[0]>0,"Server did not register charged smash");
-console.log("PASS: capped long-press smash releases a physical collision, changes ball velocity/height and registers impact.");
-for(const side of [0,1] as const){
- const held=createPong();held.serveAt=0;held.lastTick=fixed;
- held.ball={x:side===0?.069:.931,y:.5,vx:side===0?-.4:.4,vy:0,h:.38,vh:0};
- held.paddles=[.5,.5];
- setPongCharge(held,side,true,fixed);
- tickPong(held,fixed+33);
- assert.equal(Math.sign(held.ball.vx),side===0?-1:1,"Holding must not rebound the ball");
- assert.equal(held.lastSmash[side],0,"Holding must not register a hit");
- setPongCharge(held,side,false,fixed+34);
- tickPong(held,fixed+67);
- assert.equal(Math.sign(held.ball.vx),side===0?-1:1,
-  "Releasing after the ball crossed the blade must not pull it back");
+function draggedHit(duration:number,travel:number){
+ const p=createPong();p.serveAt=0;
+ movePaddle(p,0,.62-travel,fixed);
+ setPongDragging(p,0,true,fixed+10);
+ movePaddle(p,0,.62,fixed+10+duration);
+ p.lastTick=fixed+10+duration;
+ p.ball={x:.069,y:.62,vx:-.4,vy:0,h:.38,vh:0};
+ assert.ok(pongView(p,fixed+10+duration).swipe[0]>0,"Swipe strength should appear while dragging");
+ tickPong(p,fixed+43+duration);
+ assert.ok(p.ball.vx>0,"Paddle must return the incoming ball");
+ assert.ok(p.lastHit[0]>0,"Impact should be recorded");
+ return p.hitPower[0];
 }
-console.log("PASS: both paddles let the ball pass while held; a late release cannot hit it.");
+const fast=draggedHit(75,.26),slow=draggedHit(600,.26),short=draggedHit(75,.05);
+assert.ok(fast>slow&&fast>short,`Power should grow with drag speed and travel: ${fast}, ${slow}, ${short}`);
+assert.ok(fast<=1,"Swipe power should be capped");
+console.log("PASS: faster and longer drags produce stronger physical strikes.");
+const idle=createPong();idle.serveAt=0;idle.lastTick=fixed;
+idle.ball={x:.069,y:.5,vx:-.4,vy:0,h:.38,vh:0};
+tickPong(idle,fixed+33);
+assert.ok(idle.ball.vx<0&&idle.lastHit[0]===0,
+ "A still paddle must not strike an incoming ball");
+const stale=createPong();stale.serveAt=0;
+movePaddle(stale,0,.36,fixed-1000);
+setPongDragging(stale,0,true,fixed-950);
+movePaddle(stale,0,.5,fixed-900);
+setPongDragging(stale,0,false,fixed-899);
+stale.lastTick=fixed;
+stale.ball={x:.069,y:.5,vx:-.4,vy:0,h:.38,vh:0};
+tickPong(stale,fixed+33);
+assert.ok(stale.ball.vx<0&&stale.lastHit[0]===0,
+ "An old drag must not cause a delayed strike");
+console.log("PASS: still paddles and expired swipes cannot return the ball.");
+const assist=createPong();assist.serveAt=0;assist.lastTick=fixed;
+assist.ball={x:.35,y:.78,vx:-.4,vy:0,h:.43,vh:.2};
+assist.drag[0].lastAt=fixed-1000;
+tickPong(assist,fixed+33);
+assert.ok(assist.paddles[0]>.5&&assist.paddles[0]<.51,"Idle assist should move gently toward the arriving ball");
+const predicted=predictPongContact(assist.ball,0);
+assert.ok(predicted&&predicted.y>.75&&Number.isFinite(predicted.h)&&predicted.eta>0,
+ "Prediction should include lateral arrival, time and airborne height");
+assert.ok(Math.abs(paddleSideAngle(.5,true)+Math.PI/2)<.001&&
+ Math.abs(paddleSideAngle(.12,true))<.001&&
+ Math.abs(paddleSideAngle(.88,true)+Math.PI)<.001,
+ "Paddle should rotate from upright center to horizontal at either edge");
+console.log("PASS: paddle anticipates arrival height and angle while idle.");
 const low=pongContactPose({y:.5,h:.09},0,.5,1);
 const high=pongContactPose({y:.5,h:.52},0,.5,1);
 assert.equal(low.kind,"scoop");assert.equal(high.kind,"smash");

@@ -1,1 +1,0 @@
-export const MAX_SMASH_CHARGE_MS=1000;
