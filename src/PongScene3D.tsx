@@ -2,7 +2,7 @@ import {useEffect,useRef} from "react";
 import * as THREE from "three";
 import type {Game,Side} from "./Pieces";
 import {MAX_SMASH_CHARGE_MS} from "./pongTiming";
-import {pongContactPose,type PongContactPose} from "./pongSwing";
+import {pongContactPose,pongSwingMotion,type PongContactPose} from "./pongSwing";
 
 type Pong=NonNullable<Game["pong"]>;
 type Props={side:Side;snapshot:Pong;onPaddle:(value:number)=>void;
@@ -66,8 +66,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   const paddles=[new THREE.Group(),new THREE.Group()];
   const buildPaddle=(own:boolean)=>{
    const g=new THREE.Group();
-   // A tapered oval blade joins a long wood handle angled away from the blade.
-   // The handle clears the near table edge instead of disappearing beneath it.
+   // A tapered oval blade and centered handle form one continuous paddle.
    const blade=new THREE.Shape();
    blade.moveTo(0,-.34);
    blade.bezierCurveTo(-.18,-.30,-.45,-.13,-.55,.23);
@@ -83,17 +82,20 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    face.scale.set(.94,.94,1);face.position.set(0,.025,.07);g.add(face);
    const woodMaterial=material("#d9a264",.02,.72);
    const gripMaterial=material("#a56b3e",.02,.78);
-   // The handle is held above the tabletop, including its near edge.
+   // The grip projects toward its player in depth, not sideways across the
+   // face. Draw the full grip over the table so it stays connected to the blade.
    woodMaterial.depthTest=false;woodMaterial.depthWrite=false;
    gripMaterial.depthTest=false;gripMaterial.depthWrite=false;
-   const neck=new THREE.Mesh(new THREE.BoxGeometry(.27,.35,.19),woodMaterial);
-   neck.position.set(0,-.43,.08);neck.renderOrder=1;g.add(neck);
-   const handle=new THREE.Group();handle.position.set(.20,-.85,.12);
-   handle.rotation.z=.34;g.add(handle);
-   const wood=new THREE.Mesh(new THREE.CylinderGeometry(.115,.14,1.31,12),
-    woodMaterial);wood.renderOrder=1;handle.add(wood);
-   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.124,.14,.48,12),
-    gripMaterial);grip.position.y=-.42;grip.renderOrder=2;handle.add(grip);
+   const handle=new THREE.Group();handle.position.set(0,-.32,.09);
+   handle.rotation.x=own?-.75:.75;g.add(handle);
+   const neck=new THREE.Mesh(new THREE.CylinderGeometry(.135,.155,.24,12),woodMaterial);
+   neck.position.y=-.12;handle.add(neck);
+   const wood=new THREE.Mesh(new THREE.CylinderGeometry(.14,.12,.70,12),woodMaterial);
+   wood.position.y=-.53;handle.add(wood);
+   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.15,.145,.32,12),gripMaterial);
+   grip.position.y=-.70;handle.add(grip);
+   const cap=new THREE.Mesh(new THREE.SphereGeometry(.145,12,8),gripMaterial);
+   cap.scale.y=.5;cap.position.y=-.86;handle.add(cap);
    const size=own?.78:.55;
    g.scale.set(size/.68,size,size);
    return g;
@@ -144,8 +146,14 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   resize();const observer=new ResizeObserver(resize);observer.observe(host);
   const toView=(x:number,y:number)=>side===0?{x:y,y:1-x}:{x:1-y,y:x};
   let raf=0,alive=true,previous=performance.now(),lastSent=0,down=false,id=-1;
+  let pendingPaddle:number|null=null,sendTimer:ReturnType<typeof setTimeout>|null=null;
   let lastInputX:number|null=null,localLeanMomentum=0;
   let localPaddleTarget:number|null=null,lastLocalInputAt=0;
+  const flushPaddle=()=>{
+   if(sendTimer!==null){clearTimeout(sendTimer);sendTimer=null;}
+   if(pendingPaddle===null||!activeRef.current)return;
+   send.current(pendingPaddle);pendingPaddle=null;lastSent=performance.now();
+  };
   function input(event:PointerEvent,forceSend=false){
    if(!activeRef.current||!host)return;
    const rect=host.getBoundingClientRect();
@@ -161,7 +169,9 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
    lastInputX=fraction;
    const canonical=side===0?fraction:1-fraction;
    localPaddleTarget=canonical;lastLocalInputAt=now;
-   if(forceSend||now-lastSent>25){lastSent=now;send.current(canonical);}
+   pendingPaddle=canonical;
+   if(forceSend||now-lastSent>=25)flushPaddle();
+   else if(sendTimer===null)sendTimer=setTimeout(flushPaddle,25-(now-lastSent));
   }
   const onDown=(e:PointerEvent)=>{
    if(!activeRef.current)return;
@@ -259,22 +269,25 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
     const pose=strikePose[player];
     const progress=THREE.MathUtils.clamp((now-strikeAt[player])/480,0,1);
     const swing=strikeAt[player]>0&&progress<1?Math.sin(Math.PI*progress):0;
-    // Low balls get an upward scoop, high balls a downward smash, and wide
-    // balls rotate the blade and shoulder toward their actual contact point.
-    const targetPitch=power*.22+livePose.pitch*near*.34+
-     swing*(pose.pitch-pose.low*.28+pose.high*.34-.12);
+    const motion=strikeAt[player]>0&&progress<1?
+     pongSwingMotion(pose,progress,lastPaddlePower[player]):null;
+    // Low balls rise, high balls drive down, and wide balls are met with a
+    // side step, wrist turn and blade angle rather than another forward swipe.
+    paddles[player].position.x+=motion?.side??0;
+    paddles[player].position.z+=(player===side?-1:1)*(motion?.forward??0);
+    const targetPitch=power*.2+livePose.pitch*near*.23+(motion?.pitch??0);
     paddles[player].rotation.x=THREE.MathUtils.lerp(paddles[player].rotation.x,
      THREE.MathUtils.clamp(targetPitch,-.95,.95),1-Math.exp(-20*dt));
-    const targetYaw=livePose.yaw*near*.55+pose.yaw*swing*.72;
+    const targetYaw=livePose.yaw*near*.48+(motion?.yaw??0);
     paddles[player].rotation.y=THREE.MathUtils.lerp(paddles[player].rotation.y,
-     THREE.MathUtils.clamp(targetYaw,-.62,.62),1-Math.exp(-16*dt));
-    const targetSideLean=paddleLean[player]+livePose.lean*near*.3+pose.lean*swing;
+     THREE.MathUtils.clamp(targetYaw,-.95,.95),1-Math.exp(-16*dt));
+    const targetSideLean=paddleLean[player]+livePose.lean*near*.25+(motion?.roll??0);
     paddles[player].rotation.z=THREE.MathUtils.lerp(paddles[player].rotation.z,
      targetSideLean,1-Math.exp(-16*dt));
-    const targetY=THREE.MathUtils.lerp(.62,livePose.height,near*(power>.01?.32:.76));
-    const contactY=THREE.MathUtils.lerp(targetY,pose.height,swing);
+    const targetY=THREE.MathUtils.lerp(.62,livePose.height+livePose.high*.26,near*.88);
+    const contactY=THREE.MathUtils.lerp(targetY,pose.height,swing*.55);
     paddles[player].position.y=THREE.MathUtils.lerp(paddles[player].position.y,
-      contactY+power*.1+swing*(pose.low*(.1+.3*progress)+pose.high*(.25-.55*progress)),
+      contactY+power*.1+(motion?.vertical??0),
       1-Math.exp(-15*dt));
     if(player===side){
       host!.parentElement?.style.setProperty("--charge",String(power));
@@ -284,6 +297,8 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
       host!.dataset.paddleYaw=paddles[player].rotation.y.toFixed(3);
       host!.dataset.paddlePitch=paddles[player].rotation.x.toFixed(3);
       host!.dataset.paddleHeight=paddles[player].position.y.toFixed(3);
+      host!.dataset.paddleRoll=paddles[player].rotation.z.toFixed(3);
+      host!.dataset.paddleSwingX=(motion?.side??0).toFixed(3);
     }
     host!.dataset[player===side?"selfPaddleX":"opponentPaddleX"]=sx.toFixed(3);
     host!.dataset[player===side?"selfPaddleTilt":"opponentPaddleTilt"]=paddleLean[player].toFixed(3);
@@ -327,6 +342,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   raf=requestAnimationFrame(frame);
   return()=>{
    alive=false;cancelAnimationFrame(raf);observer.disconnect();
+   if(sendTimer!==null)clearTimeout(sendTimer);
    if(down)chargeCallback.current(false);
    host.removeEventListener("pointerdown",onDown);host.removeEventListener("pointermove",onMove);
    host.removeEventListener("pointerup",onUp);host.removeEventListener("pointercancel",onUp);

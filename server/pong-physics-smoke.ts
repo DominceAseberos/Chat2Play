@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {createPong,pongView,setPongCharge,tickPong,MAX_SMASH_CHARGE_MS} from "./arcade.js";
-import {pongContactPose} from "../src/pongSwing.js";
+import {pongContactPose,pongSwingMotion} from "../src/pongSwing.js";
 const fixed=10_000;
 const partial=createPong();
 setPongCharge(partial,0,true,fixed);
@@ -46,6 +46,12 @@ assert.ok(left.yaw<0&&right.yaw>0&&left.lean>0&&right.lean<0,
  "The blade must turn toward balls at either side");
 assert.ok(pongContactPose({y:.62,h:.35},1,.5,.3).yaw<0,
  "The opposite camera must mirror left/right aiming");
+const lowStroke=pongSwingMotion(low,.5,1),highStroke=pongSwingMotion(high,.5,1);
+const leftStroke=pongSwingMotion(left,.5,.3),rightStroke=pongSwingMotion(right,.5,.3);
+assert.ok(lowStroke.vertical>.2&&highStroke.vertical<-.2,
+ "Low and high shots must travel in opposite vertical directions");
+assert.ok(leftStroke.side<-.2&&rightStroke.side>.2&&leftStroke.roll>0&&rightStroke.roll<0,
+ "Side shots must sweep and turn toward the incoming ball");
 console.log("PASS: low, high, left and right contacts select distinct paddle poses.");
 const net=createPong();net.serveAt=0;net.lastTick=fixed;
 net.ball={x:.496,y:.5,vx:.45,vy:0,h:.13,vh:0};

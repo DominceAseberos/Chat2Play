@@ -3,6 +3,8 @@ export type PongSwingKind="scoop"|"lift"|"reach-left"|"reach-right"|"drive"|"sma
 type Ball={y:number;h:number};
 export type PongContactPose={kind:PongSwingKind;height:number;low:number;high:number;
  lateral:number;yaw:number;lean:number;pitch:number};
+export type PongSwingMotion={side:number;vertical:number;forward:number;
+ pitch:number;yaw:number;roll:number};
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 
@@ -26,4 +28,20 @@ export function pongContactPose(ball:Ball,side:0|1,paddle:number,power=0):PongCo
   yaw:clamp(lateral*.48,-.5,.5),
   lean:clamp(-lateral*.17,-.18,.18),
   pitch:clamp(-.14-low*.36+high*(power>.48?.60:.34),-.55,.55)};
+}
+
+// A swing moves through the contact point rather than only pitching the blade
+// forward. The same stroke can scoop a low ball and reach sideways for it.
+export function pongSwingMotion(pose:PongContactPose,progress:number,power:number):PongSwingMotion{
+ const t=clamp(progress,0,1);
+ const arc=Math.sin(Math.PI*t);
+ const level=clamp(1-pose.low-pose.high,0,1);
+ return {
+  side:pose.lateral*.68*arc,
+  vertical:(pose.low*.56-pose.high*.64)*t*arc,
+  forward:(.13+.22*level+.08*clamp(power,0,1))*arc,
+  pitch:(pose.pitch-pose.low*.25+pose.high*.28-.1*level)*arc,
+  yaw:pose.yaw*1.8*arc,
+  roll:pose.lean*2.8*arc
+ };
 }
