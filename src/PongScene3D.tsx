@@ -66,38 +66,33 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
   const paddles=[new THREE.Group(),new THREE.Group()];
   const buildPaddle=(own:boolean)=>{
    const g=new THREE.Group();
-   // A tapered oval blade and centered handle form one continuous paddle.
+   // From the player's view, a real bat is broad with its grip to the side.
+   // Its dark back faces the camera while the red hitting face points up-court.
    const blade=new THREE.Shape();
-   blade.moveTo(0,-.34);
-   blade.bezierCurveTo(-.18,-.30,-.45,-.13,-.55,.23);
-   blade.bezierCurveTo(-.67,.90,-.34,1.42,0,1.45);
-   blade.bezierCurveTo(.34,1.42,.67,.90,.55,.23);
-   blade.bezierCurveTo(.45,-.13,.18,-.30,0,-.34);
-   const rim=new THREE.Mesh(new THREE.ExtrudeGeometry(blade,{depth:.11,bevelEnabled:true,
+   blade.absellipse(0,0,.65,.54,0,Math.PI*2,false,0);
+   const rim=new THREE.Mesh(new THREE.ExtrudeGeometry(blade,{depth:.09,bevelEnabled:true,
     bevelThickness:.025,bevelSize:.025,bevelSegments:2,curveSegments:12}),
-    material(own?"#623541":"#2c426b",.03,.67));
-   rim.position.z=-.08;g.add(rim);
-   const face=new THREE.Mesh(new THREE.ShapeGeometry(blade,16),
-    material(own?"#e63844":"#3988d4",.02,.83));
-   face.scale.set(.94,.94,1);face.position.set(0,.025,.07);g.add(face);
+    material("#161c27",.04,.72));
+   rim.position.z=-.045;g.add(rim);
+   const faceShape=new THREE.ShapeGeometry(blade,20);
+   const back=new THREE.Mesh(faceShape,material(own?"#202733":"#db3f46",.02,.86));
+   back.scale.set(.96,.95,1);back.position.z=.074;g.add(back);
+   const front=new THREE.Mesh(faceShape,material(own?"#db3f46":"#202733",.02,.86));
+   front.scale.set(.96,.95,1);front.rotation.y=Math.PI;front.position.z=-.074;g.add(front);
    const woodMaterial=material("#d9a264",.02,.72);
-   const gripMaterial=material("#a56b3e",.02,.78);
-   // The grip projects toward its player in depth, not sideways across the
-   // face. Draw the full grip over the table so it stays connected to the blade.
-   woodMaterial.depthTest=false;woodMaterial.depthWrite=false;
-   gripMaterial.depthTest=false;gripMaterial.depthWrite=false;
-   const handle=new THREE.Group();handle.position.set(0,-.32,.09);
-   handle.rotation.x=own?-.75:.75;g.add(handle);
-   const neck=new THREE.Mesh(new THREE.CylinderGeometry(.135,.155,.24,12),woodMaterial);
+   const gripMaterial=material(own?"#1e9f81":"#c99e4e",.02,.75);
+   // Rotate the handle in the blade plane: the local -Y axis becomes the
+   // player's right-hand grip, rather than a stick hanging below the bat.
+   const handle=new THREE.Group();handle.position.set(own?.59:-.59,-.10,.025);
+   handle.rotation.z=own?Math.PI/2-.10:-Math.PI/2+.10;g.add(handle);
+   const neck=new THREE.Mesh(new THREE.CylinderGeometry(.135,.12,.25,12),woodMaterial);
    neck.position.y=-.12;handle.add(neck);
-   const wood=new THREE.Mesh(new THREE.CylinderGeometry(.14,.12,.70,12),woodMaterial);
-   wood.position.y=-.53;handle.add(wood);
-   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.15,.145,.32,12),gripMaterial);
-   grip.position.y=-.70;handle.add(grip);
+   const grip=new THREE.Mesh(new THREE.CylinderGeometry(.13,.145,.61,12),gripMaterial);
+   grip.position.y=-.48;handle.add(grip);
    const cap=new THREE.Mesh(new THREE.SphereGeometry(.145,12,8),gripMaterial);
-   cap.scale.y=.5;cap.position.y=-.86;handle.add(cap);
-   const size=own?.78:.55;
-   g.scale.set(size/.68,size,size);
+   cap.scale.y=.46;cap.position.y=-.77;handle.add(cap);
+   const size=own?1:.66;
+   g.scale.set(size,size*.82,size);
    return g;
   };
   const me=buildPaddle(true),them=buildPaddle(false);
@@ -275,7 +270,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onCharge,onReady,act
     // side step, wrist turn and blade angle rather than another forward swipe.
     paddles[player].position.x+=motion?.side??0;
     paddles[player].position.z+=(player===side?-1:1)*(motion?.forward??0);
-    const targetPitch=power*.2+livePose.pitch*near*.23+(motion?.pitch??0);
+    const targetPitch=.18+power*.2+livePose.pitch*near*.23+(motion?.pitch??0);
     paddles[player].rotation.x=THREE.MathUtils.lerp(paddles[player].rotation.x,
      THREE.MathUtils.clamp(targetPitch,-.95,.95),1-Math.exp(-20*dt));
     const targetYaw=livePose.yaw*near*.48+(motion?.yaw??0);
