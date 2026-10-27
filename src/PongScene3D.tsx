@@ -44,7 +44,9 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    m.position.set(x,y,z);scene.add(m);return m;
   };
   // Keep the court clear so the paddles and ball are the only game pieces.
-  box(20,.15,25,"#1c1b38",0,-.62,0);
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(80,.15,80),
+   new THREE.MeshBasicMaterial({color:"#15152f"}));
+  floor.position.set(0,-.62,0);scene.add(floor);
   // Table surface and structural details. +Z is always YOUR end.
   box(5.28,.24,8.45,"#333ca2",0,.02,0);
   box(5.10,.025,8.25,"#4151be",0,.159,0);
@@ -294,6 +296,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     const baseZ=(viewDepth-.5)*8;
     paddles[player].position.z=baseZ;
     const reach=pongReachFromDepth(smooth.depths[player],player);
+    const overTable=THREE.MathUtils.smoothstep(reach,.04,.16);
     if(reach>.985&&!touchingNet[player]){
      touchingNet[player]=true;
      const options=player===side?[-Math.PI,0]:[0,Math.PI];
@@ -321,10 +324,13 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     // Low balls rise, high balls drive down, and wide balls are met with a
     // side step, wrist turn and blade angle rather than another forward swipe.
     paddles[player].position.x+=motion?.side??0;
-    const targetPitch=touchingNet[player]?0:.18+livePose.pitch*near*.23+(motion?.pitch??0);
+    const normalPitch=.18+livePose.pitch*near*.23+(motion?.pitch??0);
+    const flatPitch=touchingNet[player]?-Math.PI/2:
+     -1.38+livePose.pitch*.18+(motion?.pitch??0)*.2;
+    const targetPitch=THREE.MathUtils.lerp(normalPitch,flatPitch,overTable);
     paddles[player].rotation.x=THREE.MathUtils.lerp(paddles[player].rotation.x,
-     THREE.MathUtils.clamp(targetPitch,-.95,.95),1-Math.exp(-20*dt));
-    const targetYaw=touchingNet[player]?0:livePose.yaw*near*.48+(motion?.yaw??0);
+     THREE.MathUtils.clamp(targetPitch,-Math.PI/2,.95),1-Math.exp(-20*dt));
+    const targetYaw=(livePose.yaw*near*.48+(motion?.yaw??0))*(1-overTable);
     paddles[player].rotation.y=THREE.MathUtils.lerp(paddles[player].rotation.y,
      THREE.MathUtils.clamp(targetYaw,-.95,.95),1-Math.exp(-16*dt));
     // At the net stop the blade turns across the table. Keep that direction
@@ -345,9 +351,12 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
      Math.max(netClearance,proposedZ):Math.min(-netClearance,proposedZ);
     const targetY=THREE.MathUtils.lerp(.62,livePose.height+livePose.high*.26,near*.88);
     const contactY=THREE.MathUtils.lerp(targetY,pose.height,swing*.55);
-    paddles[player].position.y=THREE.MathUtils.lerp(paddles[player].position.y,
-      contactY+(motion?.vertical??0),
-      1-Math.exp(-15*dt));
+    const bladeVertical=size*(.665*Math.abs(m[1])+.635*Math.abs(m[5])+.041*Math.abs(m[9]));
+    const clearTableY=.22+bladeVertical;
+    const minY=Math.max(clearTableY,touchingNet[player] ? .90 : 0);
+    paddles[player].position.y=Math.max(minY,
+     THREE.MathUtils.lerp(paddles[player].position.y,
+      Math.max(contactY+(motion?.vertical??0),minY),1-Math.exp(-15*dt)));
     if(player===side){
       host!.parentElement?.style.setProperty("--swipe-power",String(power));
       host!.dataset.power=power.toFixed(2);
@@ -357,6 +366,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
       host!.dataset.paddleYaw=paddles[player].rotation.y.toFixed(3);
       host!.dataset.paddlePitch=paddles[player].rotation.x.toFixed(3);
       host!.dataset.paddleHeight=paddles[player].position.y.toFixed(3);
+      host!.dataset.paddleTableClearance=clearTableY.toFixed(3);
       host!.dataset.paddleZ=paddles[player].position.z.toFixed(3);
       host!.dataset.netClearance=netClearance.toFixed(3);
       host!.dataset.paddleBaseZ=baseZ.toFixed(3);

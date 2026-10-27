@@ -99,7 +99,8 @@ try{
   await a.waitForFunction(()=>{
    const scene=document.querySelector(".pong-scene-3d");
    return scene?.dataset.netContact==="true"&&
-    Math.abs(Math.sin(Number(scene.dataset.paddleRoll)))<.25;
+    Math.abs(Math.sin(Number(scene.dataset.paddleRoll)))<.25&&
+    Number(scene.dataset.paddlePitch)<-1.4;
   },null,{timeout:5000});
   assert.ok(Number(await sa.getAttribute("data-self-paddle-x"))>.42&&
    Number(await sa.getAttribute("data-self-paddle-x"))<.58,
@@ -107,18 +108,34 @@ try{
   assert.ok(Number(await sa.getAttribute("data-paddle-z"))>=
    Number(await sa.getAttribute("data-net-clearance"))-.01,
    "The paddle mesh must not pass through the net");
+  assert.ok(Number(await sa.getAttribute("data-paddle-height"))>=.90&&
+   Number(await sa.getAttribute("data-paddle-height"))>=
+    Number(await sa.getAttribute("data-paddle-table-clearance"))-.01,
+   "The paddle face must remain above the tabletop and net");
+  await a.waitForTimeout(250);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.cameraZ)<9.5,
    null,{timeout:5000});
   assert.ok(Number(await sa.getAttribute("data-paddle-base-z"))<.7,
    "At the net the paddle should leave the near edge visually");
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-forward-"+width+".png"});
+  await a.mouse.move(rect.x+rect.width*.16,rect.y+rect.height*.52);
+  await a.waitForFunction(()=>{
+   const scene=document.querySelector(".pong-scene-3d");
+   const reach=Number(scene?.dataset.selfPaddleReach);
+   return reach>.4&&reach<.6&&Number(scene?.dataset.paddlePitch)<-1.2;
+  },null,{timeout:5000});
+  assert.ok(Number(await sa.getAttribute("data-paddle-height"))>=
+   Number(await sa.getAttribute("data-paddle-table-clearance"))-.01,
+   "The paddle must clear the table during a forward drag");
+  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-midtable-"+width+".png"});
   await a.mouse.move(rect.x+rect.width*.16,rect.y+rect.height*.85);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)<.05,
    null,{timeout:5000});
   await a.waitForFunction(()=>{
    const scene=document.querySelector(".pong-scene-3d");
    return scene?.dataset.netContact==="false"&&
-    Math.abs(Math.sin(Number(scene.dataset.paddleRoll)))>.75;
+    Math.abs(Math.sin(Number(scene.dataset.paddleRoll)))>.75&&
+    Number(scene.dataset.paddlePitch)>-.5;
   },null,{timeout:5000});
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.cameraZ)>10.2,
    null,{timeout:5000});
