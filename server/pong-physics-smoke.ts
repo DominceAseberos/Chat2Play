@@ -3,7 +3,8 @@ import {createPong,pongView,movePaddle,setPongDragging,tickPong} from "./arcade.
 import {paddleSideAngle,pongContactPose,pongSwingMotion,predictPongContact} from "../src/pongSwing.js";
 const fixed=10_000;
 const staged=createPong();
-staged.server=0;staged.serveAt=fixed+3000;staged.lastTick=fixed;
+staged.server=0;staged.firstServer=0;staged.lastHitter=0;staged.bounceQueue=[0,1];
+staged.serveAt=fixed+3000;staged.lastTick=fixed;
 assert.equal(pongView(staged,fixed).serveCountdown,3);
 assert.equal(pongView(staged,fixed).server,0);
 tickPong(staged,fixed+1000);
@@ -12,7 +13,11 @@ setPongDragging(staged,1,true,fixed+3100);
 movePaddle(staged,1,{y:.65,depth:1.1},fixed+3110);
 assert.equal(staged.ball.vx,0,"The receiver cannot launch the serve");
 setPongDragging(staged,0,true,fixed+3120);
-movePaddle(staged,0,{y:.67,depth:-.04},fixed+3160);
+const waitingX=staged.ball.x;
+movePaddle(staged,0,{y:.67,depth:-.1},fixed+3140);
+assert.equal(staged.ball.vx,0,"A sideways drag cannot serve");
+assert.equal(staged.ball.x,waitingX,"The staged ball must stay put during the swing");
+movePaddle(staged,0,{y:.67,depth:.05},fixed+3160);
 assert.ok(staged.ball.vx>0&&!staged.servePending,"A server swipe launches the staged ball");
 assert.equal(pongView(staged,fixed+3170).serving,false);
 let serveOwnBounce=false,serveOtherBounce=false;
@@ -22,7 +27,8 @@ for(let at=fixed+3193;at<fixed+5600;at+=33){
  if(serveOwnBounce&&staged.bounceQueue.length===0){serveOtherBounce=true;break;}
  if(staged.scores[0]||staged.scores[1])break;
 }
-assert.ok(serveOwnBounce&&serveOtherBounce,"A swipe serve must reach both sides of the table");
+assert.ok(serveOwnBounce&&serveOtherBounce,"A swipe serve must reach both sides of the table: "+
+ JSON.stringify({serveOwnBounce,serveOtherBounce,ball:staged.ball,queue:staged.bounceQueue,scores:staged.scores,netHits:staged.netHits}));
 console.log("PASS: a three-count stages the ball, then only the server's swipe launches it.");
 function draggedHit(duration:number,travel:number){
  const p=createPong();p.serveAt=0;p.servePending=false;
@@ -42,6 +48,17 @@ const fast=draggedHit(75,.26),slow=draggedHit(600,.26),short=draggedHit(75,.05);
 assert.ok(fast>slow&&fast>short,`Power should grow with drag speed and travel: ${fast}, ${slow}, ${short}`);
 assert.ok(fast<=1,"Swipe power should be capped");
 console.log("PASS: faster and longer drags produce stronger physical strikes.");
+const swept=createPong();swept.servePending=false;swept.lastTick=fixed;
+swept.lastHitter=1;swept.bounceQueue=[];
+movePaddle(swept,0,.2,fixed-50);
+swept.previousPaddles=[.2,.5];
+setPongDragging(swept,0,true,fixed-40);
+movePaddle(swept,0,.8,fixed-10);
+swept.ball={x:-.079,y:.5,vx:-.4,vy:0,h:.35,vh:0};
+tickPong(swept,fixed+33);
+assert.ok(swept.lastHit[0]>0&&swept.ball.vx>0,
+ "A fast sideways stroke should connect where the moving blade crosses the ball");
+console.log("PASS: lateral paddle motion is checked at the actual contact time.");
 const idle=createPong();idle.serveAt=0;idle.servePending=false;idle.lastTick=fixed;
 idle.lastHitter=1;idle.bounceQueue=[];
 idle.ball={x:-.075,y:.5,vx:-.4,vy:0,h:.38,vh:0};
@@ -61,6 +78,7 @@ assert.ok(stale.ball.vx<0&&stale.lastHit[0]===0,
  "An old drag must not cause a delayed strike");
 console.log("PASS: still paddles and expired swipes cannot return the ball.");
 const range=createPong();
+range.servePending=false;
 movePaddle(range,0,{y:1.7,depth:-.1},fixed);
 movePaddle(range,1,{y:-.7,depth:1.1},fixed);
 assert.equal(range.paddles[0],1.35,"Paddle must travel past the right side of the table");

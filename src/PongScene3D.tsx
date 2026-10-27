@@ -13,10 +13,11 @@ type Props={side:Side;snapshot:Pong;onPaddle:(value:{y:number;depth:number})=>vo
 // transforms coordinates for the local player.
 export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,active}:Props){
  const mount=useRef<HTMLDivElement>(null);
- const latest=useRef(snapshot),send=useRef(onPaddle),dragCallback=useRef(onDrag),
+ const latest=useRef(snapshot),receivedAt=useRef(performance.now()),send=useRef(onPaddle),dragCallback=useRef(onDrag),
  readyCallback=useRef(onReady),activeRef=useRef(active);
  const initialized=useRef(false);
- useEffect(()=>{latest.current=snapshot;send.current=onPaddle;dragCallback.current=onDrag;
+ useEffect(()=>{if(latest.current!==snapshot)receivedAt.current=performance.now();
+  latest.current=snapshot;send.current=onPaddle;dragCallback.current=onDrag;
   readyCallback.current=onReady;activeRef.current=active;},[snapshot,onPaddle,onDrag,onReady,active]);
  useEffect(()=>{
   const host=mount.current;if(!host)return;
@@ -269,8 +270,11 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    const dt=Math.min((now-previous)/1000,.06);previous=now;
    localLeanMomentum*=Math.exp(-(down?2.5:10)*dt);
    const next=latest.current;
+   let resetBall=false;
    if(next!==observedSnapshot){
     const before=observedSnapshot.ball,after=next.ball;
+    resetBall=next.serving!==observedSnapshot.serving||
+     before.vx*after.vx<0||next.lastHit.some((hit,index)=>hit>observedSnapshot.lastHit[index]);
     for(const player of [0,1] as const){
      const rebound=player===0?before.vx<0&&after.vx>0&&after.x<.21:
       before.vx>0&&after.vx<0&&after.x>.79;
@@ -284,11 +288,19 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     }
     observedSnapshot=next;
    }
-   const gap=Math.hypot(next.ball.x-smooth.x,next.ball.y-smooth.y);
-   const blend=1-Math.exp(-19*dt);
-   if(gap>.15){smooth.x=next.ball.x;smooth.y=next.ball.y;}
-   else{smooth.x=THREE.MathUtils.lerp(smooth.x,next.ball.x,blend);smooth.y=THREE.MathUtils.lerp(smooth.y,next.ball.y,blend);}
-   smooth.h=THREE.MathUtils.lerp(smooth.h,next.ball.h??.38,blend);
+   // Render a short distance ahead of the last network sample. Easing toward
+   // old samples added an extra visible delay at the exact moment of contact.
+   const lead=next.serving?0:THREE.MathUtils.clamp(
+    (now-receivedAt.current)/1000+.045,0,.12);
+   const ballTarget={x:next.ball.x+next.ball.vx*lead,
+    y:next.ball.y+next.ball.vy*lead,
+    h:next.ball.h+next.ball.vh*lead-1.1*lead*lead};
+   const gap=Math.hypot(ballTarget.x-smooth.x,ballTarget.y-smooth.y);
+   const blend=1-Math.exp(-48*dt);
+   if(resetBall||gap>.10){smooth.x=ballTarget.x;smooth.y=ballTarget.y;smooth.h=ballTarget.h;}
+   else{smooth.x=THREE.MathUtils.lerp(smooth.x,ballTarget.x,blend);
+    smooth.y=THREE.MathUtils.lerp(smooth.y,ballTarget.y,blend);
+    smooth.h=THREE.MathUtils.lerp(smooth.h,ballTarget.h,blend);}
    for(const player of [0,1] as const){
     const pendingLocal=localPaddleTarget!==null&&
      (Math.abs(next.paddles[player]-localPaddleTarget.y)>.008||
