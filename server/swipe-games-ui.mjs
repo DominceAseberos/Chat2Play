@@ -92,17 +92,34 @@ try{
   console.log("PASS PONG stationary press stays weak; dragging generates strike power");
   await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.70);
   await a.mouse.down();
-  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.15);
+  await a.mouse.move(rect.x+rect.width*.16,rect.y+rect.height*.70);
+  await a.mouse.move(rect.x+rect.width*.16,rect.y+rect.height*.15);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)>.95,
    null,{timeout:5000});
+  await a.waitForFunction(()=>{
+   const scene=document.querySelector(".pong-scene-3d");
+   return scene?.dataset.netContact==="true"&&
+    Math.abs(Math.sin(Number(scene.dataset.paddleRoll)))<.25;
+  },null,{timeout:5000});
+  assert.ok(Number(await sa.getAttribute("data-self-paddle-x"))>.42&&
+   Number(await sa.getAttribute("data-self-paddle-x"))<.58,
+   "The net pose should be checked with the paddle centered");
+  assert.ok(Number(await sa.getAttribute("data-paddle-z"))>=
+   Number(await sa.getAttribute("data-net-clearance"))-.01,
+   "The paddle mesh must not pass through the net");
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.cameraZ)<9.5,
    null,{timeout:5000});
   assert.ok(Number(await sa.getAttribute("data-paddle-base-z"))<.7,
    "At the net the paddle should leave the near edge visually");
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-forward-"+width+".png"});
-  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.85);
+  await a.mouse.move(rect.x+rect.width*.16,rect.y+rect.height*.85);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)<.05,
    null,{timeout:5000});
+  await a.waitForFunction(()=>{
+   const scene=document.querySelector(".pong-scene-3d");
+   return scene?.dataset.netContact==="false"&&
+    Math.abs(Math.sin(Number(scene.dataset.paddleRoll)))>.75;
+  },null,{timeout:5000});
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.cameraZ)>10.2,
    null,{timeout:5000});
   const resting=await sa.evaluate(el=>({reach:Number(el.dataset.selfPaddleReach),

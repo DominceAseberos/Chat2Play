@@ -136,6 +136,8 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
   let cameraFocusZ=.35;
   const smooth={x:.5,y:.5,h:.42,paddles:[.5,.5],depths:[-.1,1.1]};
   const previousScreenX=[.5,.5],paddleLean=[0,0];
+  const touchingNet=[false,false],netHorizontalAngle=[0,0];
+  const paddleRotationMatrix=new THREE.Matrix4();
  // Transparent diminishing ball trail + future ballistic trajectory guide.
  const trail:Array<THREE.Mesh>=[];
  const trajectory:Array<THREE.Mesh>=[];
@@ -291,6 +293,13 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     const viewDepth=side===0?1-smooth.depths[player]:smooth.depths[player];
     const baseZ=(viewDepth-.5)*8;
     paddles[player].position.z=baseZ;
+    const reach=pongReachFromDepth(smooth.depths[player],player);
+    if(reach>.985&&!touchingNet[player]){
+     touchingNet[player]=true;
+     const options=player===side?[-Math.PI,0]:[0,Math.PI];
+     netHorizontalAngle[player]=options.reduce((best,angle)=>
+      Math.abs(angle-paddles[player].rotation.z)<Math.abs(best-paddles[player].rotation.z)?angle:best);
+    }else if(reach<.90)touchingNet[player]=false;
     // A small motion lean sits on top of the deliberate center-to-edge pose.
     const horizontalSpeed=(sx-previousScreenX[player])/Math.max(dt,.001);
     previousScreenX[player]=sx;
@@ -312,17 +321,28 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     // Low balls rise, high balls drive down, and wide balls are met with a
     // side step, wrist turn and blade angle rather than another forward swipe.
     paddles[player].position.x+=motion?.side??0;
-    paddles[player].position.z+=(player===side?-1:1)*(motion?.forward??0);
-    const targetPitch=.18+livePose.pitch*near*.23+(motion?.pitch??0);
+    const targetPitch=touchingNet[player]?0:.18+livePose.pitch*near*.23+(motion?.pitch??0);
     paddles[player].rotation.x=THREE.MathUtils.lerp(paddles[player].rotation.x,
      THREE.MathUtils.clamp(targetPitch,-.95,.95),1-Math.exp(-20*dt));
-    const targetYaw=livePose.yaw*near*.48+(motion?.yaw??0);
+    const targetYaw=touchingNet[player]?0:livePose.yaw*near*.48+(motion?.yaw??0);
     paddles[player].rotation.y=THREE.MathUtils.lerp(paddles[player].rotation.y,
      THREE.MathUtils.clamp(targetYaw,-.95,.95),1-Math.exp(-16*dt));
-    const targetSideLean=paddleSideAngle(sx,player===side)+paddleLean[player]*.22+
+    // At the net stop the blade turns across the table. Keep that direction
+    // latched while touching the net so small sideways movements cannot flip it.
+    const targetSideLean=touchingNet[player]?netHorizontalAngle[player]:
+     paddleSideAngle(sx,player===side)+paddleLean[player]*.22+
      livePose.lean*near*.25+(motion?.roll??0);
     paddles[player].rotation.z=THREE.MathUtils.lerp(paddles[player].rotation.z,
      targetSideLean,1-Math.exp(-16*dt));
+    // Project the full racket, including its handle, onto the net normal.
+    // The 3D swing stops before the mesh can pass through the net plane.
+    paddleRotationMatrix.makeRotationFromEuler(paddles[player].rotation);
+    const m=paddleRotationMatrix.elements,size=player===side?.9:.74;
+    const racketDepth=size*(1.515*Math.abs(m[2])+.635*Math.abs(m[6])+.041*Math.abs(m[10]));
+    const netClearance=.09+racketDepth;
+    const proposedZ=baseZ+(player===side?-1:1)*(motion?.forward??0);
+    paddles[player].position.z=player===side?
+     Math.max(netClearance,proposedZ):Math.min(-netClearance,proposedZ);
     const targetY=THREE.MathUtils.lerp(.62,livePose.height+livePose.high*.26,near*.88);
     const contactY=THREE.MathUtils.lerp(targetY,pose.height,swing*.55);
     paddles[player].position.y=THREE.MathUtils.lerp(paddles[player].position.y,
@@ -338,7 +358,9 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
       host!.dataset.paddlePitch=paddles[player].rotation.x.toFixed(3);
       host!.dataset.paddleHeight=paddles[player].position.y.toFixed(3);
       host!.dataset.paddleZ=paddles[player].position.z.toFixed(3);
+      host!.dataset.netClearance=netClearance.toFixed(3);
       host!.dataset.paddleBaseZ=baseZ.toFixed(3);
+      host!.dataset.netContact=touchingNet[player]?"true":"false";
       host!.dataset.paddleRoll=paddles[player].rotation.z.toFixed(3);
       host!.dataset.paddleSwingX=(motion?.side??0).toFixed(3);
     }
