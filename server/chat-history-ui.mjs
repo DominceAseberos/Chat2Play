@@ -18,6 +18,18 @@ for(const [width,height] of specs){
   }
   await Promise.all([a.getByRole("button",{name:"Find a stranger"}).click(),b.getByRole("button",{name:"Find a stranger"}).click()]);
   await Promise.all([a.locator(".partner-name-button").waitFor({timeout:18000}),b.locator(".partner-name-button").waitFor({timeout:18000})]);
+  if(mobile){
+   const fullscreen=await a.evaluate(()=>{
+    const topbar=document.querySelector(".topbar"),card=document.querySelector(".chat-card")?.getBoundingClientRect();
+    return {topbarDisplay:topbar?getComputedStyle(topbar).display:null,
+     card:card&&{top:card.top,bottom:card.bottom,height:card.height},viewport:innerHeight,
+     bottomSettings:!!document.querySelector('.chat-dock button[aria-label="Open appearance settings"]')};
+   });
+   assert.equal(fullscreen.topbarDisplay,"none","The redundant mobile top navigation must be hidden");
+   assert.ok(fullscreen.card&&fullscreen.card.top<=1&&fullscreen.card.bottom>=fullscreen.viewport-1,
+    "The mobile chat must fill the viewport: "+JSON.stringify(fullscreen));
+   assert.ok(fullscreen.bottomSettings,"Settings must remain available in the bottom dock");
+  }
   console.log("MATCH",width+"x"+height,"both clients joined same match");
   await b.getByRole("textbox",{name:"Message",exact:true}).fill("typing preview");
   await a.locator(".typing-above-composer .typing-pill").waitFor({timeout:5000});
