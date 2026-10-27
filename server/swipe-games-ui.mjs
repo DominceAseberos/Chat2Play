@@ -107,7 +107,7 @@ try{
    const scene=document.querySelector(".pong-scene-3d");
    return scene?.dataset.netContact==="true"&&
     Math.abs(Math.sin(Number(scene.dataset.paddleRoll)))<.25&&
-    Number(scene.dataset.paddlePitch)<-1.4;
+    Math.abs(Number(scene.dataset.paddlePitch))<.25;
   },null,{timeout:5000});
   assert.ok(Number(await sa.getAttribute("data-self-paddle-x"))>.42&&
    Number(await sa.getAttribute("data-self-paddle-x"))<.58,
@@ -129,7 +129,7 @@ try{
   await a.waitForFunction(()=>{
    const scene=document.querySelector(".pong-scene-3d");
    const reach=Number(scene?.dataset.selfPaddleReach);
-   return reach>.4&&reach<.6&&Number(scene?.dataset.paddlePitch)<-1.2;
+   return reach>.4&&reach<.6&&Math.abs(Number(scene?.dataset.paddlePitch))<.25;
   },null,{timeout:5000});
   assert.ok(Number(await sa.getAttribute("data-paddle-height"))>=
    Number(await sa.getAttribute("data-paddle-table-clearance"))-.01,

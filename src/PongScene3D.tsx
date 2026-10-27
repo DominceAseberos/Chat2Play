@@ -295,7 +295,6 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     const baseZ=(viewDepth-.5)*8;
     paddles[player].position.z=baseZ;
     const reach=pongReachFromDepth(smooth.depths[player],player);
-    const overTable=THREE.MathUtils.smoothstep(reach,.04,.16);
     if(reach>.985&&!touchingNet[player]){
      touchingNet[player]=true;
      const options=player===side?[-Math.PI,0]:[0,Math.PI];
@@ -323,15 +322,14 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     // Low balls rise, high balls drive down, and wide balls are met with a
     // side step, wrist turn and blade angle rather than another forward swipe.
     paddles[player].position.x+=motion?.side??0;
-    const normalPitch=.18+livePose.pitch*near*.23+(motion?.pitch??0);
-    const flatPitch=touchingNet[player]?-Math.PI/2:
-     -1.38+livePose.pitch*.18+(motion?.pitch??0)*.2;
-    const targetPitch=THREE.MathUtils.lerp(normalPitch,flatPitch,overTable);
+    // Move the blade forward without tipping its face toward the tabletop.
+    // Small contact adjustments are enough to suggest a low or high stroke.
+    const targetPitch=livePose.pitch*near*.08+(motion?.pitch??0)*.12;
     paddles[player].rotation.x=THREE.MathUtils.lerp(paddles[player].rotation.x,
-     THREE.MathUtils.clamp(targetPitch,-Math.PI/2,.95),1-Math.exp(-20*dt));
-    const targetYaw=(livePose.yaw*near*.48+(motion?.yaw??0))*(1-overTable);
+     THREE.MathUtils.clamp(targetPitch,-.18,.18),1-Math.exp(-20*dt));
+    const targetYaw=livePose.yaw*near*.3+(motion?.yaw??0)*.2;
     paddles[player].rotation.y=THREE.MathUtils.lerp(paddles[player].rotation.y,
-     THREE.MathUtils.clamp(targetYaw,-.95,.95),1-Math.exp(-16*dt));
+     THREE.MathUtils.clamp(targetYaw,-.35,.35),1-Math.exp(-16*dt));
     // At the net stop the blade turns across the table. Keep that direction
     // latched while touching the net so small sideways movements cannot flip it.
     const targetSideLean=touchingNet[player]?netHorizontalAngle[player]:
