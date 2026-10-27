@@ -8,18 +8,32 @@ export type PongSwingMotion={side:number;vertical:number;forward:number;
  pitch:number;yaw:number;roll:number};
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
+export const PONG_REST_DEPTH=-.10;
+export const PONG_NET_LIMIT=.46;
+
+// Depth is measured along the table: player 0 approaches the net by moving
+// toward 1, while player 1 approaches it by moving toward 0.
+export function pongDepthFromReach(reach:number,side:0|1){
+ const depth=PONG_REST_DEPTH+clamp(reach,0,1)*(PONG_NET_LIMIT-PONG_REST_DEPTH);
+ return side===0?depth:1-depth;
+}
+export function pongReachFromDepth(depth:number,side:0|1){
+ const ownDepth=side===0?depth:1-depth;
+ return clamp((ownDepth-PONG_REST_DEPTH)/(PONG_NET_LIMIT-PONG_REST_DEPTH),0,1);
+}
 
 export function paddleSideAngle(screenX:number,own:boolean){
- const edge=clamp((screenX-.5)/.38,-1,1);
+ const edge=clamp((screenX-.5)/.34,-1,1);
  return own?-Math.PI/2-edge*Math.PI/2:Math.PI/2-edge*Math.PI/2;
 }
 
-export function predictPongContact(ball:FlyingBall,side:0|1){
- const target=side===0?.064:.936;
+export function predictPongContact(ball:FlyingBall,side:0|1,
+ depth=pongDepthFromReach(0,side)){
+ const target=depth+(side===0?.014:-.014);
  const incoming=side===0?ball.vx<-.001:ball.vx>.001;
  if(!incoming)return null;
  const eta=(target-ball.x)/ball.vx;
- if(eta<0||eta>1.4)return null;
+ if(eta<0||eta>1.8)return null;
  let y=ball.y,h=ball.h,vy=ball.vy,vh=ball.vh;
  const steps=Math.max(1,Math.ceil(eta/.012)),step=eta/steps;
  for(let i=0;i<steps;i++){

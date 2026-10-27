@@ -1,10 +1,12 @@
 import {useEffect,useRef} from "react";
 import * as THREE from "three";
+import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 import type {Game,Side} from "./Pieces";
-import {paddleSideAngle,pongContactPose,pongSwingMotion,pongSwipePower,predictPongContact,type PongContactPose} from "./pongSwing";
+import {paddleSideAngle,pongContactPose,pongDepthFromReach,pongReachFromDepth,
+ pongSwingMotion,pongSwipePower,predictPongContact,type PongContactPose} from "./pongSwing";
 
 type Pong=NonNullable<Game["pong"]>;
-type Props={side:Side;snapshot:Pong;onPaddle:(value:number)=>void;
+type Props={side:Side;snapshot:Pong;onPaddle:(value:{y:number;depth:number})=>void;
  onDrag:(active:boolean)=>void;onReady:()=>void;active:boolean};
 
 // Server continues to simulate canonical sideways Pong; only the camera
@@ -96,6 +98,31 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
   };
   const me=buildPaddle(true),them=buildPaddle(false);
   paddles[side]=me;paddles[side===0?1:0]=them;scene.add(me,them);
+  let paddleModelReady=false;
+  new GLTFLoader().load("/models/pong/paddle.glb",asset=>{
+   if(!alive)return;
+   for(const player of [0,1] as const){
+    const target=paddles[player];
+    target.traverse(obj=>{if(obj instanceof THREE.Mesh){
+     obj.geometry.dispose();
+     const mats=Array.isArray(obj.material)?obj.material:[obj.material];
+     mats.forEach(mat=>mat.dispose());
+    }});
+    target.clear();
+    const model=asset.scene.clone(true);
+    // The far player shows the red face and has the grip mirrored, while
+    // motion still acts on the same outer paddle group as before.
+    if(player!==side)model.rotation.y=Math.PI;
+    target.add(model);
+    const size=player===side?.9:.74;
+    target.scale.set(size,size,size);
+   }
+   host.dataset.paddleModel="blender";
+   paddleModelReady=true;
+  },undefined,()=>{
+   host.dataset.paddleModel="fallback";
+   paddleModelReady=true;
+  });
   const ball=new THREE.Mesh(new THREE.SphereGeometry(.132,12,8),
    new THREE.MeshStandardMaterial({color:"#ffffff",roughness:.18,emissive:"#d1b9ff",emissiveIntensity:.15}));
   scene.add(ball);
@@ -106,7 +133,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
   const camera=new THREE.PerspectiveCamera(42,1,.1,70);
   // Keep the near-end view centered, as in a first-person table tennis rally.
   camera.position.set(0,6.35,10.65);camera.lookAt(0,.12,.35);
-  const smooth={x:.5,y:.5,h:.42,paddles:[.5,.5]},clock=new THREE.Clock();
+  const smooth={x:.5,y:.5,h:.42,paddles:[.5,.5],depths:[-.1,1.1]};
   const previousScreenX=[.5,.5],paddleLean=[0,0];
  // Transparent diminishing ball trail + future ballistic trajectory guide.
  const trail:Array<THREE.Mesh>=[];
@@ -140,11 +167,13 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
   resize();const observer=new ResizeObserver(resize);observer.observe(host);
   const toView=(x:number,y:number)=>side===0?{x:y,y:1-x}:{x:1-y,y:x};
   let raf=0,alive=true,previous=performance.now(),lastSent=0,down=false,id=-1;
-  let pendingPaddle:number|null=null,sendTimer:ReturnType<typeof setTimeout>|null=null;
+  let pendingPaddle:{y:number;depth:number}|null=null,sendTimer:ReturnType<typeof setTimeout>|null=null;
   let lastInputX:number|null=null,localLeanMomentum=0;
-  let swipeStartX=.5,swipeTravel=0,swipeSpeed=0,lastSwipeMoveAt=0;
+  let pointerStartX=0,pointerStartY=0,swipeStartX=.5,swipeStartReach=0;
+  let swipeTravel=0,swipeSpeed=0,lastSwipeMoveAt=0;
+  let lastInputReach:number|null=null;
   let localSwipePreview=0,localSwipePreviewAt=0;
-  let localPaddleTarget:number|null=null,lastLocalInputAt=0;
+  let localPaddleTarget:{y:number;depth:number}|null=null,lastLocalInputAt=0;
   const flushPaddle=()=>{
    if(sendTimer!==null){clearTimeout(sendTimer);sendTimer=null;}
    if(pendingPaddle===null||!activeRef.current)return;
@@ -153,39 +182,51 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
   function input(event:PointerEvent,forceSend=false){
    if(!activeRef.current||!host)return;
    const rect=host.getBoundingClientRect();
-   // x controls physical paddle position; no controls on vertical axis.
-   // Match the server's .12..88 paddle limit for instant local feedback.
-   const fraction=THREE.MathUtils.clamp((event.clientX-rect.left)/Math.max(rect.width,1),.12,.88);
+   // Keep the starting position under the player's control. Dragging upward
+   // advances from behind the near edge; dragging downward retreats there.
+   const fraction=THREE.MathUtils.clamp(swipeStartX+
+    (event.clientX-pointerStartX)/Math.max(rect.width,1),.16,.84);
+   const reach=THREE.MathUtils.clamp(swipeStartReach+
+    (pointerStartY-event.clientY)/Math.max(rect.height*.38,1),0,1);
+   const depth=pongDepthFromReach(reach,side);
    const now=performance.now();
    // Accumulate a small directional impulse. Frame damping makes it settle
    // naturally even when pointer events arrive at uneven intervals.
    if(lastInputX!==null)
     localLeanMomentum=THREE.MathUtils.clamp(
      localLeanMomentum-(fraction-lastInputX)*4.5,-.38,.38);
-   if(down&&lastInputX!==null&&Math.abs(fraction-lastInputX)>.001){
-    const distance=Math.abs(fraction-lastInputX);
+   if(down&&lastInputX!==null&&lastInputReach!==null){
+    const distance=Math.hypot(fraction-lastInputX,reach-lastInputReach);
+    if(distance>.001){
     const elapsed=Math.max((now-lastSwipeMoveAt)/1000,.016);
     swipeSpeed=THREE.MathUtils.lerp(swipeSpeed,distance/elapsed,.62);
     swipeTravel+=distance;
     const ballX=side===0?latest.current.ball.y:1-latest.current.ball.y;
-    const approach=Math.abs(ballX-swipeStartX)-Math.abs(ballX-fraction);
+    const ballReach=pongReachFromDepth(latest.current.ball.x,side);
+    const approach=Math.hypot(ballX-swipeStartX,ballReach-swipeStartReach)-
+     Math.hypot(ballX-fraction,ballReach-reach);
     localSwipePreview=pongSwipePower(swipeSpeed,swipeTravel,approach);
     localSwipePreviewAt=now;
+    }
    }
    lastSwipeMoveAt=now;
-   lastInputX=fraction;
+   lastInputX=fraction;lastInputReach=reach;
    const canonical=side===0?fraction:1-fraction;
-   localPaddleTarget=canonical;lastLocalInputAt=now;
-   pendingPaddle=canonical;
+   localPaddleTarget={y:canonical,depth};lastLocalInputAt=now;
+   pendingPaddle={y:canonical,depth};
    if(forceSend||now-lastSent>=25)flushPaddle();
    else if(sendTimer===null)sendTimer=setTimeout(flushPaddle,25-(now-lastSent));
   }
   const onDown=(e:PointerEvent)=>{
    if(!activeRef.current)return;
    if(down)return;
-   // Initial placement is free; subsequent movement is the measured stroke.
-   input(e,true);down=true;id=e.pointerId;
-   swipeStartX=lastInputX??.5;swipeTravel=0;swipeSpeed=0;
+   down=true;id=e.pointerId;
+   pointerStartX=e.clientX;pointerStartY=e.clientY;
+   const target=localPaddleTarget??{y:latest.current.paddles[side],depth:latest.current.depths[side]};
+   swipeStartX=side===0?target.y:1-target.y;
+   swipeStartReach=pongReachFromDepth(target.depth,side);
+   lastInputX=swipeStartX;lastInputReach=swipeStartReach;
+   swipeTravel=0;swipeSpeed=0;
    localSwipePreview=0;localSwipePreviewAt=0;lastSwipeMoveAt=performance.now();
    host.setPointerCapture(e.pointerId);dragCallback.current(true);
  };
@@ -197,7 +238,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     // The release position must reach the server even if the last move was throttled.
     if(activeRef.current)input(e,true);
     down=false;id=-1;
-    lastInputX=null;
+    lastInputX=null;lastInputReach=null;
     if(host.hasPointerCapture(e.pointerId))host.releasePointerCapture(e.pointerId);
     if(activeRef.current)dragCallback.current(false);
    }
@@ -231,14 +272,24 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    else{smooth.x=THREE.MathUtils.lerp(smooth.x,next.ball.x,blend);smooth.y=THREE.MathUtils.lerp(smooth.y,next.ball.y,blend);}
    smooth.h=THREE.MathUtils.lerp(smooth.h,next.ball.h??.38,blend);
    for(const player of [0,1] as const){
-    const useLocal=player===side&&localPaddleTarget!==null&&now-lastLocalInputAt<500;
-    const paddleTarget=useLocal?localPaddleTarget!:next.paddles[player];
+    const pendingLocal=localPaddleTarget!==null&&
+     (Math.abs(next.paddles[player]-localPaddleTarget.y)>.008||
+      Math.abs(next.depths[player]-localPaddleTarget.depth)>.008);
+    const useLocal=player===side&&localPaddleTarget!==null&&
+     (down||pendingLocal&&now-lastLocalInputAt<1800);
+    const paddleTarget=useLocal?localPaddleTarget!.y:next.paddles[player];
+    const depthTarget=useLocal?localPaddleTarget!.depth:next.depths[player];
     smooth.paddles[player]=THREE.MathUtils.lerp(smooth.paddles[player],paddleTarget,
+     1-Math.exp(-(useLocal?40:24)*dt));
+    smooth.depths[player]=THREE.MathUtils.lerp(smooth.depths[player],depthTarget,
      1-Math.exp(-(useLocal?40:24)*dt));
     const sx=side===0?smooth.paddles[player]:1-smooth.paddles[player];
     paddles[player].position.x=(sx-.5)*5.0;
-    // The visible blade sits at the same end plane as the server collision.
-    paddles[player].position.z=player===side?3.6:-3.6;
+    // Depth shares the server's table coordinate, so the resting blade sits
+    // behind the near edge and the net stop is the same in both cameras.
+    const viewDepth=side===0?1-smooth.depths[player]:smooth.depths[player];
+    const baseZ=(viewDepth-.5)*8;
+    paddles[player].position.z=baseZ;
     // A small motion lean sits on top of the deliberate center-to-edge pose.
     const horizontalSpeed=(sx-previousScreenX[player])/Math.max(dt,.001);
     previousScreenX[player]=sx;
@@ -248,7 +299,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     const localPower=player===side?localSwipePreview*
      THREE.MathUtils.clamp(1-(now-localSwipePreviewAt)/500,0,1):0;
     const power=Math.max(next.swipe[player],localPower);
-    const prediction=predictPongContact(next.ball,player);
+    const prediction=predictPongContact(next.ball,player,next.depths[player]);
     const near=prediction?THREE.MathUtils.clamp((.9-prediction.eta)/.75,0,1):0;
     const aimedBall=prediction?{y:prediction.y,h:prediction.h}:next.ball;
     const livePose=pongContactPose(aimedBall,player,smooth.paddles[player],power);
@@ -285,10 +336,14 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
       host!.dataset.paddleYaw=paddles[player].rotation.y.toFixed(3);
       host!.dataset.paddlePitch=paddles[player].rotation.x.toFixed(3);
       host!.dataset.paddleHeight=paddles[player].position.y.toFixed(3);
+      host!.dataset.paddleZ=paddles[player].position.z.toFixed(3);
+      host!.dataset.paddleBaseZ=baseZ.toFixed(3);
       host!.dataset.paddleRoll=paddles[player].rotation.z.toFixed(3);
       host!.dataset.paddleSwingX=(motion?.side??0).toFixed(3);
     }
     host!.dataset[player===side?"selfPaddleX":"opponentPaddleX"]=sx.toFixed(3);
+    host!.dataset[player===side?"selfPaddleReach":"opponentPaddleReach"]=
+     pongReachFromDepth(smooth.depths[player],player).toFixed(3);
     host!.dataset[player===side?"selfPaddleTilt":"opponentPaddleTilt"]=paddleLean[player].toFixed(3);
    }
    const projected=toView(smooth.x,smooth.y);
@@ -325,7 +380,9 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    host!.dataset.renderer="three";host!.dataset.drawCalls=String(renderer.info.render.calls);
    host!.dataset.ballHeight=next.ball.h?.toFixed(3)??"0";
    renderer.render(scene,camera);
-   if(!readySent){readySent=true;readyCallback.current();}
+   if(!readySent&&paddleModelReady){
+    readySent=true;host!.dataset.sceneReadySent="true";readyCallback.current();
+   }
   }
   raf=requestAnimationFrame(frame);
   return()=>{

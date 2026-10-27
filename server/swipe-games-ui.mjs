@@ -37,9 +37,27 @@ try{
   await Promise.all([sa.waitFor({timeout:16000}),sb.waitFor({timeout:16000})]);
   await Promise.all([a.waitForFunction(()=>document.querySelector(".pong-scene-3d")?.dataset.renderer==="three",{},{timeout:11000}),
     b.waitForFunction(()=>document.querySelector(".pong-scene-3d")?.dataset.renderer==="three",{},{timeout:11000})]);
-  await a.locator(".pong-load-screen").waitFor({state:"hidden",timeout:16000});
-  await b.locator(".pong-load-screen").waitFor({state:"hidden",timeout:16000});
+  try{
+   await a.locator(".pong-load-screen").waitFor({state:"hidden",timeout:16000});
+   await b.locator(".pong-load-screen").waitFor({state:"hidden",timeout:16000});
+  }catch(error){
+   console.error("PONG LOAD STATE",await Promise.all([a,b].map(page=>page.evaluate(()=>({
+    scenes:[...document.querySelectorAll(".pong-scene-3d")].map(el=>({
+     renderer:el.dataset.renderer,model:el.dataset.paddleModel,ready:el.dataset.sceneReadySent,
+     parent:el.parentElement?.className})),
+    loading:[...document.querySelectorAll(".pong-load-screen")].map(el=>({
+     text:el.textContent,visible:!!el.getClientRects().length,
+     parent:el.parentElement?.className})),
+    dialogs:[...document.querySelectorAll('[role="dialog"]')].map(el=>el.getAttribute("aria-label"))
+   })))),errors);
+   throw error;
+  }
   console.log("PASS PONG scene ready on both players");
+  assert.equal(await sa.getAttribute("data-paddle-model"),"blender",
+   "The Blender paddle should load in the game");
+  assert.ok(Number(await sa.getAttribute("data-self-paddle-reach"))<.05,
+   "The paddle should start behind the near edge of the board");
+  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-rest-center-"+width+".png"});
   await sa.evaluate(el=>{
    window.__pongMaxPower=0;
    new MutationObserver(()=>{window.__pongMaxPower=Math.max(window.__pongMaxPower,
@@ -52,8 +70,12 @@ try{
   await a.mouse.move(rect.x+rect.width*.44,rect.y+rect.height*.70);
   await a.mouse.move(rect.x+rect.width*.66,rect.y+rect.height*.70);
   await a.mouse.move(rect.x+rect.width*.82,rect.y+rect.height*.70);
-  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)>.68,
-   null,{timeout:5000});
+  try{await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)>.68,
+   null,{timeout:5000});}
+  catch(error){console.error("PONG MOVE STATE",await sa.evaluate(el=>({
+   x:el.dataset.selfPaddleX,dragging:el.dataset.dragging,power:el.dataset.power,
+   reach:el.dataset.selfPaddleReach,model:el.dataset.paddleModel
+  })));throw error;}
   const edge=await sa.evaluate(el=>({x:Number(el.dataset.selfPaddleX),roll:Number(el.dataset.paddleRoll)}));
   assert.ok(edge.x>.68,"Drag should move the paddle toward the right edge: "+JSON.stringify(edge));
   assert.ok(Math.abs(Math.abs(edge.roll)-Math.PI/2)>.35,
@@ -66,6 +88,23 @@ try{
   await a.mouse.up();await a.waitForTimeout(75);
   assert.equal(await sa.getAttribute("data-dragging"),"false");
   console.log("PASS PONG stationary press stays weak; dragging generates strike power");
+  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.70);
+  await a.mouse.down();
+  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.15);
+  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)>.95,
+   null,{timeout:5000});
+  assert.ok(Number(await sa.getAttribute("data-paddle-base-z"))<.7,
+   "At the net the paddle should leave the near edge visually");
+  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-forward-"+width+".png"});
+  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.85);
+  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)<.05,
+   null,{timeout:5000});
+  const resting=await sa.evaluate(el=>({reach:Number(el.dataset.selfPaddleReach),
+   z:Number(el.dataset.paddleBaseZ),side:el.dataset.perspective}));
+  assert.ok(resting.z>4.5,
+   "At rest the paddle should sit outside the board visually: "+JSON.stringify(resting));
+  await a.mouse.up();
+  console.log("PASS PONG paddle advances to the net and retreats behind the board");
   await a.waitForTimeout(240);
   const ballHeight=Number(await sa.getAttribute("data-ball-height"));
   assert.ok(Number.isFinite(ballHeight)&&ballHeight>=.09,"Physical ball height missing "+ballHeight);

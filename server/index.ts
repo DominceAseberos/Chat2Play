@@ -701,8 +701,12 @@ io.on("connection", socket => {
   socket.on("pong:paddle",(value:unknown)=>{
     const state=getRoom(socket);
     if(!state||state.room.game?.kind!=="pong"||state.room.game.phase!=="playing"||!state.room.game.pong)return;
-    if(typeof value!=="number")return;
-    movePaddle(state.room.game.pong,state.side,value);
+    if(typeof value==="number")movePaddle(state.room.game.pong,state.side,value);
+    else if(value&&typeof value==="object"){
+      const paddle=value as {y?:unknown;depth?:unknown};
+      if(typeof paddle.y==="number"&&typeof paddle.depth==="number")
+        movePaddle(state.room.game.pong,state.side,{y:paddle.y,depth:paddle.depth});
+    }
   });
   socket.on("game:close", (raw:unknown) => {
     const state = getRoom(socket);

@@ -60,10 +60,14 @@ for(const [width,height] of pairs){
   await b.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.opponentPaddleX)<.38,null,{timeout:7000});
   if(width<700){
    await a.touchscreen.tap(box.x+box.width*.35,controlY);
+   assert.ok(Number(await sceneA.getAttribute("data-self-paddle-x"))>.62,
+    "Tapping the court should not teleport the paddle");
+   await a.mouse.move(box.x+box.width*.72,controlY);
+   await a.mouse.down();await a.mouse.move(box.x+box.width*.35,controlY);await a.mouse.up();
    await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)<.44,null,{timeout:7000});
    await b.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.opponentPaddleX)>.56,null,{timeout:7000});
   }
-  await a.mouse.move(box.x+box.width*.35,box.y+box.height*.84);
+  await a.mouse.move(box.x+box.width*.72,box.y+box.height*.84);
   await a.mouse.down();await a.mouse.move(box.x+box.width*.18,box.y+box.height*.84);await a.mouse.up();
   await a.waitForTimeout(380);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX)<.29,null,{timeout:7000});

@@ -8,7 +8,7 @@ function draggedHit(duration:number,travel:number){
  setPongDragging(p,0,true,fixed+10);
  movePaddle(p,0,.62,fixed+10+duration);
  p.lastTick=fixed+10+duration;
- p.ball={x:.069,y:.62,vx:-.4,vy:0,h:.38,vh:0};
+ p.ball={x:-.081,y:.62,vx:-.4,vy:0,h:.38,vh:0};
  assert.ok(pongView(p,fixed+10+duration).swipe[0]>0,"Swipe strength should appear while dragging");
  tickPong(p,fixed+43+duration);
  assert.ok(p.ball.vx>0,"Paddle must return the incoming ball");
@@ -20,7 +20,7 @@ assert.ok(fast>slow&&fast>short,`Power should grow with drag speed and travel: $
 assert.ok(fast<=1,"Swipe power should be capped");
 console.log("PASS: faster and longer drags produce stronger physical strikes.");
 const idle=createPong();idle.serveAt=0;idle.lastTick=fixed;
-idle.ball={x:.069,y:.5,vx:-.4,vy:0,h:.38,vh:0};
+idle.ball={x:-.081,y:.5,vx:-.4,vy:0,h:.38,vh:0};
 tickPong(idle,fixed+33);
 assert.ok(idle.ball.vx<0&&idle.lastHit[0]===0,
  "A still paddle must not strike an incoming ball");
@@ -30,13 +30,30 @@ setPongDragging(stale,0,true,fixed-950);
 movePaddle(stale,0,.5,fixed-900);
 setPongDragging(stale,0,false,fixed-899);
 stale.lastTick=fixed;
-stale.ball={x:.069,y:.5,vx:-.4,vy:0,h:.38,vh:0};
+stale.ball={x:-.081,y:.5,vx:-.4,vy:0,h:.38,vh:0};
 tickPong(stale,fixed+33);
 assert.ok(stale.ball.vx<0&&stale.lastHit[0]===0,
  "An old drag must not cause a delayed strike");
 console.log("PASS: still paddles and expired swipes cannot return the ball.");
+const range=createPong();
+movePaddle(range,0,{y:.5,depth:1},fixed);
+movePaddle(range,1,{y:.5,depth:0},fixed);
+assert.equal(range.depths[0],.46,"Near paddle must stop before the net");
+assert.equal(range.depths[1],.54,"Far paddle must stop before the net");
+movePaddle(range,0,{y:.5,depth:-1},fixed);
+movePaddle(range,1,{y:.5,depth:2},fixed);
+assert.equal(range.depths[0],-.1,"Near paddle must be able to retreat outside the board");
+assert.equal(range.depths[1],1.1,"Far paddle must be able to retreat outside the board");
+const forward=createPong();forward.serveAt=0;forward.lastTick=fixed;
+setPongDragging(forward,0,true,fixed);
+movePaddle(forward,0,{y:.5,depth:.25},fixed+20);
+forward.ball={x:.18,y:.5,vx:-.4,vy:0,h:.38,vh:0};
+tickPong(forward,fixed+33);
+assert.ok(forward.ball.vx>0&&forward.lastHit[0]>0,
+ "A forward drag must strike a ball when the moving paddle crosses it");
+console.log("PASS: paddle moves behind the board or up to the net and hits on its forward sweep.");
 const assist=createPong();assist.serveAt=0;assist.lastTick=fixed;
-assist.ball={x:.35,y:.78,vx:-.4,vy:0,h:.43,vh:.2};
+assist.ball={x:.20,y:.78,vx:-.4,vy:0,h:.43,vh:.2};
 assist.drag[0].lastAt=fixed-1000;
 tickPong(assist,fixed+33);
 assert.ok(assist.paddles[0]>.5&&assist.paddles[0]<.51,"Idle assist should move gently toward the arriving ball");

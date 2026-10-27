@@ -7,7 +7,8 @@ import "./arcade.css";
 
 type MemorySymbol = "sun" | "moon" | "heart" | "star" | "gem" | "zap";
 type ArcadeProps = {
- game: Game; side: Side; onFlip:(index:number)=>void; onPaddle:(value:number)=>void;
+ game: Game; side: Side; onFlip:(index:number)=>void;
+ onPaddle:(value:{y:number;depth:number})=>void;
  onDrag:(active:boolean)=>void;onSceneReady:()=>void;
  onMinimize:()=>void; onClose:()=>void; onReplay:(kind:Kind)=>void;
 };
@@ -66,7 +67,7 @@ export function paddleFromScreenX(x:number,side:Side){
  return Math.max(0,Math.min(1,side===0?x:1-x));
 }
 function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay}:{game:Game;side:Side;
- onPaddle:(value:number)=>void;onDrag:(active:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void}){
+ onPaddle:(value:{y:number;depth:number})=>void;onDrag:(active:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void}){
  const state=game.pong;
  if(!state)return null;
  const opponent=side===0?1:0;
@@ -93,7 +94,7 @@ function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay}:{game:Game;
    </div>
    {game.phase==="finished"&&<div className="pong-result-float"><ResultBanner game={game} side={side} onReplay={onReplay}/></div>}
   </div>
-  <div className="pong-controls"><span className="pong-my-paddle"><span className="paddle-key bottom"/> Your paddle is at the bottom</span><span>Drag toward the ball to strike</span></div>
+  <div className="pong-controls"><span className="pong-my-paddle"><span className="paddle-key bottom"/> Your paddle starts behind the table</span><span>Drag in any direction to strike</span></div>
  </section>;
 }
 export function ArcadeView({game,side,onFlip,onPaddle,onDrag,onSceneReady,onMinimize,onClose,onReplay}:ArcadeProps){
