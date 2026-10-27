@@ -381,7 +381,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    const projected=toView(smooth.x,smooth.y);
    const worldX=(projected.x-.5)*5.0;
    const worldZ=(projected.y-.5)*8.0;
-   const physicalHeight=.31+Math.max(0,smooth.h-.09)*2.8;
+   const physicalHeight=.31+(smooth.h-.09)*2.8;
    ball.position.set(worldX,physicalHeight,worldZ);ballLight.position.copy(ball.position);
    if(now-lastHistory>42){
     lastHistory=now;history.unshift(ball.position.clone());
@@ -401,15 +401,16 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     const step=.075;
     const prev=px;
     px+=pvx*step;py+=pvy*step;pvh-=2.20*step;ph+=pvh*step;
-    if(py<-.5||py>1.5||px<-.5||px>1.5){dot.visible=false;return;}
     if(ph<.09){
-     if(px<0||px>1||py<0||py>1){dot.visible=false;return;}
-     ph=.09;pvh=Math.max(.90,-pvh*.9);
+     if(px<0||px>1||py<0||py>1){
+      if(ph<=-.17){dot.visible=false;return;}
+     }else{ph=.09;pvh=Math.max(.90,-pvh*.9);}
     }
-    if((prev-.5)*(px-.5)<=0&&ph<.26){dot.visible=false;return;}
+    if((prev-.5)*(px-.5)<=0&&py>=0&&py<=1&&ph<.26){dot.visible=false;return;}
     const pos=toView(px,py);
-    dot.position.set((pos.x-.5)*5,.31+Math.max(0,ph-.09)*2.8,(pos.y-.5)*8);
+    dot.position.set((pos.x-.5)*5,.31+(ph-.09)*2.8,(pos.y-.5)*8);
    });
+   shadow.visible=next.ball.x>=0&&next.ball.x<=1&&next.ball.y>=0&&next.ball.y<=1;
    shadow.position.set(worldX,.189,worldZ);
    host!.dataset.ballX=projected.x.toFixed(3);host!.dataset.ballY=projected.y.toFixed(3);
    host!.dataset.renderer="three";host!.dataset.drawCalls=String(renderer.info.render.calls);

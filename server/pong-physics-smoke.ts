@@ -115,13 +115,20 @@ const sideOut=createPong();sideOut.serveAt=0;sideOut.lastTick=fixed;
 sideOut.lastHitter=0;sideOut.bounceQueue=[1];
 sideOut.ball={x:.7,y:.99,vx:.25,vy:.8,h:.4,vh:0};
 tickPong(sideOut,fixed+33);
-assert.equal(sideOut.scores[1],1,"A shot leaving the sideline before bouncing is out");
+assert.deepEqual(sideOut.scores,[0,0],"An airborne ball beyond the sideline is still live");
+let airborneTicks=0;
+for(let t=fixed+66;t<fixed+1200&&!sideOut.scores[1];t+=33){
+ tickPong(sideOut,t);
+ if(!sideOut.scores[1])airborneTicks++;
+}
+assert.ok(airborneTicks>=5,"The point must wait for the ball's visible fall");
+assert.equal(sideOut.scores[1],1,"A shot missing the table scores only when it reaches the ground");
 const chase=createPong();chase.serveAt=0;chase.lastTick=fixed;
 chase.lastHitter=0;chase.bounceQueue=[];
 chase.ball={x:.8,y:.99,vx:.25,vy:.8,h:.3,vh:0};
 tickPong(chase,fixed+33);
 assert.deepEqual(chase.scores,[0,0],"A legal bounce may be chased beyond the sideline");
-chase.ball.h=.0901;chase.ball.vh=-.5;
+chase.ball.h=-.16;chase.ball.vh=-.5;
 tickPong(chase,fixed+66);
 assert.equal(chase.scores[0],1,"A missed return beyond the sideline awards the hitter");
 const secondBounce=createPong();secondBounce.serveAt=0;secondBounce.lastTick=fixed;
@@ -151,19 +158,19 @@ assert.ok(ownBounce&&receiverBounce,
 console.log("PASS: serve bounces on the server's side, clears the net, then bounces for the receiver.");
 const deuce=createPong();deuce.serveAt=0;deuce.lastTick=fixed;
 deuce.scores=[10,10];deuce.lastHitter=0;deuce.bounceQueue=[1];
-deuce.ball={x:.7,y:.99,vx:.25,vy:.8,h:.4,vh:0};
+deuce.ball={x:.7,y:1.01,vx:.25,vy:.8,h:-.16,vh:-.5};
 assert.equal(tickPong(deuce,fixed+33),null,"11–10 must not end a game");
 assert.deepEqual(deuce.scores,[10,11]);
 deuce.serveAt=0;deuce.lastTick=fixed+33;
 deuce.lastHitter=0;deuce.bounceQueue=[1];
-deuce.ball={x:.7,y:.99,vx:.25,vy:.8,h:.4,vh:0};
+deuce.ball={x:.7,y:1.01,vx:.25,vy:.8,h:-.16,vh:-.5};
 assert.equal(tickPong(deuce,fixed+66),1,"A two-point lead after deuce wins");
 console.log("PASS: first to eleven requires a two-point lead.");
 const rotation=createPong();rotation.serveAt=0;rotation.lastTick=fixed;
 rotation.firstServer=0;rotation.server=0;
 for(let i=1;i<=4;i++){
  rotation.lastHitter=0;rotation.bounceQueue=[1];rotation.serveActive=false;
- rotation.ball={x:.7,y:.99,vx:.25,vy:.8,h:.4,vh:0};
+ rotation.ball={x:.7,y:1.01,vx:.25,vy:.8,h:-.16,vh:-.5};
  rotation.serveAt=0;rotation.lastTick=fixed+i*33-33;
  tickPong(rotation,fixed+i*33);
  assert.equal(rotation.server,i<=1||i>=4?0:1,

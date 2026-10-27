@@ -40,8 +40,8 @@ export function predictPongContact(ball:FlyingBall,side:0|1,
   y+=vy*step;vh-=2.2*step;h+=vh*step;
   if(y<-.5||y>1.5)return null;
   if(h<.09){
-   if(y<0||y>1)return null;
-   h=.09;vh=Math.max(.90,-vh*.9);
+   if(y<0||y>1){if(h<=-.17)return null;}
+   else{h=.09;vh=Math.max(.90,-vh*.9);}
   }
  }
  return {y,h,eta};
@@ -60,7 +60,7 @@ export function pongContactPose(ball:Ball,side:0|1,paddle:number,power=0):PongCo
  const ballX=side===0?ball.y:1-ball.y;
  const paddleX=side===0?paddle:1-paddle;
  const lateral=clamp((ballX-paddleX)*5,-1,1);
- const physicalHeight=.31+Math.max(0,ball.h-.09)*2.8;
+ const physicalHeight=.31+(ball.h-.09)*2.8;
  const height=clamp(physicalHeight-.39,.28,1.35);
  const low=clamp((.77-physicalHeight)/.48,0,1);
  const high=clamp((physicalHeight-1.14)/.48,0,1);

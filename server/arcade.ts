@@ -81,7 +81,7 @@ export function memoryWinner(mem:MemoryState): Side|"draw" {
 // Fixed-step, server-authoritative arcade ball dynamics. Height, table bounce,
  // net impacts and paddle impulses are actual simulated values, not client
  // generated movement. Units are normalized to the table footprint.
-const BALL_FLOOR=.09,NET_HEIGHT=.26,GRAVITY=-2.20;
+const BALL_FLOOR=.09,BALL_GROUND=-.17,NET_HEIGHT=.26,GRAVITY=-2.20;
 const other=(side:Side):Side=>side===0?1:0;
 function serve(pong:PongState,server:Side,now=Date.now()){
   pong.server=server;pong.lastHitter=server;pong.bounceQueue=[server,other(server)];
@@ -191,15 +191,15 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
   const previousH=ball.h;
   ball.x+=ball.vx*step;ball.y+=ball.vy*step;
   ball.vh+=GRAVITY*step;ball.h+=ball.vh*step;
-  // A shot that misses the table is a fault. After a legal bounce, the
-  // receiver may still return it from beyond the sideline or end line.
+  // Crossing a sideline is not a miss yet. Let the ball fall all the way to
+  // the ground so either player can still reach an airborne wide shot.
   const outside=ball.y<0||ball.y>1||ball.x<0||ball.x>1;
-  if((outside&&p.bounceQueue.length>0)||
-   ball.y<-.5||ball.y>1.5||ball.x<-.5||ball.x>1.5){
+  if(outside&&ball.h<=BALL_GROUND){
    return point(p.bounceQueue.length?other(p.lastHitter):p.lastHitter);
   }
   // A serve that clips the net after its own bounce is replayed.
-  if((previousX-.5)*(ball.x-.5)<=0&&Math.abs(ball.x-previousX)>.00001&&ball.h<NET_HEIGHT){
+  if((previousX-.5)*(ball.x-.5)<=0&&Math.abs(ball.x-previousX)>.00001&&
+   ball.y>=0&&ball.y<=1&&ball.h<NET_HEIGHT){
     p.netHits++;
     if(p.serveActive&&p.bounceQueue.length===1){
      serve(p,p.server,now);return null;
@@ -207,14 +207,15 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
     return point(other(p.lastHitter));
   }
   if(previousH>BALL_FLOOR&&ball.h<=BALL_FLOOR&&ball.vh<0){
-   if(outside)return point(p.bounceQueue.length?other(p.lastHitter):p.lastHitter);
-   const court:Side=ball.x<.5?0:1;
-   if(p.bounceQueue.length===0)return point(p.lastHitter);
-   if(p.bounceQueue[0]!==court)return point(other(p.lastHitter));
-   p.bounceQueue.shift();
-   if(p.bounceQueue.length===0)p.serveActive=false;
-   ball.h=BALL_FLOOR;
-   ball.vh=Math.max(.90,-ball.vh*.9);
+   if(!outside){
+    const court:Side=ball.x<.5?0:1;
+    if(p.bounceQueue.length===0)return point(p.lastHitter);
+    if(p.bounceQueue[0]!==court)return point(other(p.lastHitter));
+    p.bounceQueue.shift();
+    if(p.bounceQueue.length===0)p.serveActive=false;
+    ball.h=BALL_FLOOR;
+    ball.vh=Math.max(.90,-ball.vh*.9);
+   }
   }
   for(const side of [0,1] as const){
    const toward=side===0?ball.vx<0:ball.vx>0;
