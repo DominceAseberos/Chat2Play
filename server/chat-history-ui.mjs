@@ -11,7 +11,7 @@ for(const [width,height] of specs){
  try{
   await Promise.all([a.goto(base,{waitUntil:"domcontentloaded",timeout:22000}),b.goto(base,{waitUntil:"domcontentloaded",timeout:22000})]);
   for(const p of [a,b]){
-   await p.locator(".online-status strong").waitFor({timeout:15000});
+   await p.locator(".online-status strong").waitFor({state:"attached",timeout:15000});
    const pager=p.locator(".home-pager-next");
    if(await pager.isVisible())for(let i=0;i<3;i++)await pager.click();
    const consent=p.locator(".consent input");if(await consent.isVisible())await consent.check();

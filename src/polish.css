@@ -438,9 +438,9 @@
 .henyo-voice-correct .henyo-correct-button{margin-top:3px}
 .henyo-voice-correct>p{line-height:1.5}
 
-/* Mobile chat uses the bottom dock for navigation and settings. */
+/* Mobile uses the in-view controls and bottom dock instead of the global bar. */
 @media(max-width:700px){
- .c2p-app:has(.chat-layout)>.topbar{display:none}
+ .c2p-app>.topbar{display:none}
  .c2p-app:has(.chat-layout) .chat-layout{height:100dvh;max-height:100dvh;margin:0}
  .c2p-app:has(.chat-layout) .chat-card{height:100dvh;max-height:100dvh;min-height:0}
 }
