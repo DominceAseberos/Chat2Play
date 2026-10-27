@@ -39,6 +39,7 @@
     "test:winner-question": "tsx server/winner-question-smoke.ts",
     "test:winner-question:ui": "node server/winner-question-ui.mjs",
     "test:rps:rounds": "node server/rps-rounds-ui.mjs",
+    "test:rps:load-recovery": "node server/rps-load-recovery-ui.mjs",
     "test:games:swipe": "node server/swipe-games-ui.mjs"
   },
   "dependencies": {

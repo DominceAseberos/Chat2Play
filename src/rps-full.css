@@ -1,6 +1,10 @@
 .rps-full-overlay{position:fixed;inset:0;z-index:70;overflow:hidden;isolation:isolate;background:#f6f3f0;color:#fff}
 .rps-full-scene,.rps-full-scene-loading{position:absolute;inset:0}
 .rps-full-scene .rps-scene-3d{width:100%;height:100%;touch-action:none}
+.rps-scene-error{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:14px;padding:24px;background:#211b3b;color:#fff;text-align:center}
+.rps-scene-error button{min-height:44px;padding:10px 18px;border:0;border-radius:12px;
+ background:#e9d7f4;color:#38214c;font:inherit;font-weight:850}
 .rps-arena-sign{position:absolute;z-index:2;transform:translate(-50%,-100%);display:grid;place-items:center;width:78px;height:78px;color:#ffe7ac;filter:drop-shadow(0 3px 0 #4e2c64) drop-shadow(0 8px 8px #281935b0);pointer-events:none}
 .rps-arena-sign[hidden]{display:none}
 .rps-arena-sign svg{stroke-width:2.65;fill:#ffe7ac22}

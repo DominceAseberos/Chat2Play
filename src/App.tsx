@@ -1,5 +1,5 @@
 import {GAME_CATEGORIES,GAME_CATEGORY_LABELS,type GameCategory} from "../server/foreheadWordBank";
-import { useEffect, useMemo, useRef, useState, type FormEvent, type UIEvent } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type UIEvent } from "react";
 import { io } from "socket.io-client";
 import HenyoVoice from "./HenyoVoice";
 import { ArcadeView } from "./ArcadeView";
@@ -19,12 +19,32 @@ type Received = ChatMessage;
 const SOCKET_URL = import.meta.env.VITE_API_URL || window.location.origin;
 const formattedTime = (value: number) => new Date(value).toLocaleTimeString(undefined, {hour:"numeric",minute:"2-digit"});
 const initialLike = { yours:false, theirs:false, mutual:false };
+class RpsLoadBoundary extends Component<{children:ReactNode},{failed:boolean}>{
+ state={failed:false};
+ static getDerivedStateFromError(){return {failed:true};}
+ render(){
+  if(!this.state.failed)return this.props.children;
+  return <section className="rps-load-error" role="alert">
+   <strong>Rock Paper Scissors couldn't open</strong>
+   <p>The app may have updated while this tab was open. Refresh to load the current game.</p>
+   <button type="button" onClick={()=>window.location.reload()}>Refresh app</button>
+  </section>;
+ }
+}
 function useStoredTheme() {
  const [theme,setTheme] = useState<Theme>(()=>localStorage.getItem("c2p:theme-noir")==="light"?"light":"dark");
  useEffect(()=>{document.documentElement.dataset.theme=theme;localStorage.setItem("c2p:theme-noir",theme);document.querySelector('meta[name="theme-color"]')?.setAttribute("content",theme==="dark"?"#090b10":"#eeeef2");},[theme]);
  return [theme,setTheme] as const;
 }
 function App(){
+ // An open tab keeps these modules after a deployment removes old hashed files.
+ useEffect(()=>{
+  const timer=window.setTimeout(()=>{
+   void import("./RpsFullView").catch(()=>{});
+   void import("./RpsScene3D").catch(()=>{});
+  },500);
+  return()=>window.clearTimeout(timer);
+ },[]);
  const socket=useMemo(()=>io(SOCKET_URL,{transports:["websocket","polling"],tryAllTransports:true,autoConnect:false,reconnection:true,reconnectionAttempts:Infinity,reconnectionDelay:700,reconnectionDelayMax:7000,randomizationFactor:.45,timeout:10000}),[]);
  const [theme,setTheme]=useStoredTheme();
  const [savedProfile]=useState(loadMatchingProfile);
@@ -530,13 +550,13 @@ function App(){
   </AnimatePresence>
   <AnimatePresence>
    {mode==="chat"&&arcadeOpen&&game?.kind==="rps"&&(game.phase==="loading"||game.phase==="playing"||game.phase==="finished")&&
-    <Suspense fallback={<div role="status" style={{position:"fixed",inset:0,zIndex:70,display:"grid",placeItems:"center",background:"#211b3b",color:"#fff",fontWeight:800}}>Loading Rock Paper Scissors…</div>}>
+    <RpsLoadBoundary key={game.id}><Suspense fallback={<div role="status" style={{position:"fixed",inset:0,zIndex:70,display:"grid",placeItems:"center",background:"#211b3b",color:"#fff",fontWeight:800}}>Loading Rock Paper Scissors…</div>}>
      <RpsFullView key={game.id} game={game} side={side} questionPending={questionActive}
       onMove={choice=>{if(canChat)socket.emit("game:move",choice);}}
       onReady={()=>{if(canChat)socket.emit("rps:scene-ready",{id:game.id});socket.emit("rps:view",{id:game.id,viewing:true});}}
       onBack={backFromRps}
       onClose={requestQuitGame} onReplay={()=>socket.emit("rps:rematch",{id:game.id})}/>
-    </Suspense>}
+    </Suspense></RpsLoadBoundary>}
    {mode==="chat"&&game?.kind==="forehead"&&(game.phase==="mic"||game.phase==="loading"||game.phase==="playing")&&
     <HenyoVoice key={"voice-"+game.id} game={game} side={side} socket={socket} onLeave={requestQuitGame}/>}
    {mode==="chat"&&arcadeOpen&&game&&game.kind==="forehead"&&(game.phase==="loading"||game.phase==="playing"||game.phase==="finished")&&<Suspense fallback={<div className="forehead-overlay" role="status" style={{color:"white",display:"grid",placeItems:"center"}}>Loading 3D game...</div>}>

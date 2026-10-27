@@ -114,3 +114,9 @@
  font-size:38px;font-weight:950;color:#fff;text-shadow:0 3px 12px #31184aaa;
  pointer-events:none;animation:rps-count-pop .3s ease}
 @keyframes rps-count-pop{from{opacity:.35;scale:.6}to{opacity:1;scale:1}}
+.rps-load-error{position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center;
+ background:#211b3b;color:#fff}
+.rps-load-error strong{font-size:21px}.rps-load-error p{max-width:340px;margin:0;color:#e0d4ec;line-height:1.5}
+.rps-load-error button{min-height:44px;padding:10px 20px;border:0;border-radius:12px;
+ background:#e9d7f4;color:#38214c;font:inherit;font-weight:850}

@@ -1,4 +1,4 @@
-import {useEffect,useRef} from "react";
+import {useEffect,useRef,useState} from "react";
 import * as THREE from "three";
 import {CharacterActor,type CharacterAction} from "./CharacterActor";
 import {FirstPersonController} from "./FirstPersonController";
@@ -16,6 +16,8 @@ type Props={side:Side;view:View;ownChoice:Choice|null;
 /** One match world. Both cameras render the same opponent, floor and podiums. */
 export default function RpsScene3D({side,view,ownChoice,reveal,gameId,round,stage,chantEndsAt,revealEndsAt,pauseAt,onReady}:Props){
  const mount=useRef<HTMLDivElement>(null);
+ const [graphicsError,setGraphicsError]=useState<string|null>(null);
+ const [retry,setRetry]=useState(0);
  const state=useRef({view,reveal,round,stage,chantEndsAt,revealEndsAt,pauseAt});
  const onReadyRef=useRef(onReady);
  useEffect(()=>{state.current={view,reveal,round,stage,chantEndsAt,revealEndsAt,pauseAt};onReadyRef.current=onReady;},
@@ -24,11 +26,17 @@ export default function RpsScene3D({side,view,ownChoice,reveal,gameId,round,stag
   const host=mount.current;if(!host)return;
   let renderer:THREE.WebGLRenderer;
   try{renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"low-power"});}
-  catch{host.dataset.fallback="true";onReadyRef.current();return;}
+  catch{host.dataset.fallback="true";setGraphicsError("Graphics could not start on this device.");onReadyRef.current();return;}
   renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.3));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
   renderer.domElement.style.cssText="width:100%;height:100%;display:block;";
   renderer.domElement.setAttribute("aria-hidden","true");host.appendChild(renderer.domElement);
+  let renderFailed=false;
+  const contextLost=(event:Event)=>{event.preventDefault();renderFailed=true;
+   host.dataset.fallback="true";setGraphicsError("The 3D display was interrupted.");onReadyRef.current();};
+  const contextRestored=()=>{renderFailed=false;delete host.dataset.fallback;setGraphicsError(null);};
+  renderer.domElement.addEventListener("webglcontextlost",contextLost);
+  renderer.domElement.addEventListener("webglcontextrestored",contextRestored);
 
   const scene=new THREE.Scene();
   const opponentZ=-3.85,arenaMidZ=opponentZ/2;
@@ -79,13 +87,11 @@ export default function RpsScene3D({side,view,ownChoice,reveal,gameId,round,stag
    loaded=true;host.dataset.characterSource="blender-glb";
   }).catch(()=>{
    if(!alive)return;host.dataset.assetError="true";host.dataset.fallback="true";
-   const message=document.createElement("p");message.role="alert";
-   message.textContent="Characters could not load. Please reopen the game to retry.";
-   host.appendChild(message);onReadyRef.current();
+   setGraphicsError("The characters could not load.");onReadyRef.current();
   });
   function animate(now:number){
    if(!alive)return;raf=requestAnimationFrame(animate);
-   if(!inView){lastPaint=now;return;}
+   if(!inView||renderFailed){lastPaint=now;return;}
    if(now-lastPaint<32)return;
    const current=state.current,paused=Boolean(current.pauseAt);
    const dt=paused?0:Math.min(.05,(now-lastPaint)/1000||0);lastPaint=now;
@@ -139,7 +145,9 @@ export default function RpsScene3D({side,view,ownChoice,reveal,gameId,round,stag
    host!.dataset.phase=chant?"chant":current.view==="pov"?self.rpsPhase:shown?"revealed":"choosing";
    host!.dataset.beat=pumping?String(beat+1):shown?"3":"";
    host!.dataset.result=shown?.winner==="draw"?"draw":shown?shown.winner===side?"win":"lose":"waiting";
-   renderer.render(scene,activeCamera);
+   try{renderer.render(scene,activeCamera);}
+   catch{renderFailed=true;host!.dataset.fallback="true";
+    setGraphicsError("The 3D display stopped rendering.");onReadyRef.current();return;}
    host!.dataset.renderer="three";host!.dataset.drawCalls=String(renderer.info.render.calls);
    host!.dataset.triangles=String(renderer.info.render.triangles);
    if(!readySent&&host!.getBoundingClientRect().width>10){readySent=true;onReadyRef.current();}
@@ -147,13 +155,19 @@ export default function RpsScene3D({side,view,ownChoice,reveal,gameId,round,stag
   raf=requestAnimationFrame(animate);
   return()=>{
    alive=false;cancelAnimationFrame(raf);observer.disconnect();visibility.disconnect();
+   renderer.domElement.removeEventListener("webglcontextlost",contextLost);
+   renderer.domElement.removeEventListener("webglcontextrestored",contextRestored);
    renderer.domElement.removeEventListener("pointerdown",down);renderer.domElement.removeEventListener("pointermove",move);
    renderer.domElement.removeEventListener("pointerup",up);renderer.domElement.removeEventListener("pointercancel",up);
    self.dispose();local.dispose();opponent.dispose();disposeStage();renderer.dispose();renderer.domElement.remove();
   };
- },[side,gameId]);
- return <div className={"rps-scene-3d "+(view==="pov"?"rps-scene-pov":"rps-scene-arena")} ref={mount} role="img"
-  aria-label={view==="pov"?"First-person view of one Rock Paper Scissors arena":"Side camera showing both players facing each other in the same arena"}>
+ },[side,gameId,retry]);
+ return <div className={"rps-scene-3d "+(view==="pov"?"rps-scene-pov":"rps-scene-arena")} ref={mount}
+  role={graphicsError?undefined:"img"}
+  aria-label={graphicsError?undefined:view==="pov"?"First-person view of one Rock Paper Scissors arena":"Side camera showing both players facing each other in the same arena"}>
+  {graphicsError&&<div className="rps-scene-error" role="alert">
+   <strong>{graphicsError}</strong><button type="button" onClick={()=>{setGraphicsError(null);setRetry(value=>value+1);}}>Retry 3D view</button>
+  </div>}
   {([0,1] as const).map(i=>{
    const player=i===0?side:(side===0?1:0);
    const choice=reveal?reveal.choices[player]:i===0?ownChoice:null;
