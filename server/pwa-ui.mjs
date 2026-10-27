@@ -29,6 +29,7 @@ try{
   return registration?.active?.state==="activated";
  },null,{timeout:20000});
  await page.reload({waitUntil:"networkidle"});
+ await page.waitForFunction(()=>Boolean(navigator.serviceWorker.controller),null,{timeout:15000});
  assert.equal(await page.evaluate(()=>navigator.serviceWorker.controller?.scriptURL.endsWith("/sw.js")),true);
 
  await context.setOffline(true);
