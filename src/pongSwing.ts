@@ -1,7 +1,7 @@
 export type PongSwingKind="scoop"|"lift"|"reach-left"|"reach-right"|"drive"|"smash";
 
 type Ball={y:number;h:number};
-type FlyingBall=Ball&{x:number;vx:number;vy:number;vh:number};
+type FlyingBall=Ball&{x:number;vx:number;vy:number;vh:number;sideSpin?:number};
 export type PongContactPose={kind:PongSwingKind;height:number;low:number;high:number;
  lateral:number;yaw:number;lean:number;pitch:number};
 export type PongSwingMotion={side:number;vertical:number;forward:number;
@@ -37,14 +37,15 @@ export function predictPongContact(ball:FlyingBall,side:0|1,
  if(!incoming)return null;
  const eta=(target-ball.x)/ball.vx;
  if(eta<0||eta>1.8)return null;
- let y=ball.y,h=ball.h,vy=ball.vy,vh=ball.vh;
+ let y=ball.y,h=ball.h,vy=ball.vy,vh=ball.vh,sideSpin=ball.sideSpin??0;
  const steps=Math.max(1,Math.ceil(eta/.012)),step=eta/steps;
  for(let i=0;i<steps;i++){
-  y+=vy*step;vh-=2.2*step;h+=vh*step;
+  vy+=sideSpin*step;y+=vy*step;sideSpin*=Math.exp(-.38*step);
+  vh-=2.2*step;h+=vh*step;
   if(y<-.5||y>1.5)return null;
   if(h<.09){
    if(y<0||y>1){if(h<=-.17)return null;}
-   else{h=.09;vh=Math.max(.90,-vh*.9);}
+   else{h=.09;vh=Math.max(.90,-vh*.9);sideSpin*=.6;}
   }
  }
  return {y,h,eta};

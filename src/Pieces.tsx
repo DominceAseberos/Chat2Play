@@ -29,7 +29,7 @@ export type Game = {
   board?:(Side|null)[]; turn?:Side; winner?:Side|"draw"; ready:boolean[];
   reveal?:{choices:[Choice|null,Choice|null];winner:Side|"draw"};
   memory?:{cards:("sun"|"moon"|"heart"|"star"|"gem"|"zap"|null)[];matched:boolean[];revealed:number[];scores:[number,number];turn:Side;resolving:boolean};
-  pong?:{ball:{x:number;y:number;h:number;vx:number;vy:number;vh:number};
+  pong?:{ball:{x:number;y:number;h:number;vx:number;vy:number;vh:number;sideSpin?:number};
    paddles:[number,number];depths:[number,number];scores:[number,number];serving:boolean;
    dragging:[boolean,boolean];swipe:[number,number];lastHit:[number,number];
    hitPower:[number,number];netHits:number;targetPoints:5|10;server:Side;serveCountdown:number};

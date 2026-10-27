@@ -14,7 +14,7 @@ export type MemoryView = {
   scores: [number,number]; turn: Side; resolving: boolean;
 };
 export type PongState = {
-  ball:{x:number;y:number;vx:number;vy:number;h:number;vh:number};
+  ball:{x:number;y:number;vx:number;vy:number;h:number;vh:number;sideSpin?:number};
   paddles:[number,number];previousPaddles:[number,number];depths:[number,number];previousDepths:[number,number];
   scores:[number,number];serveAt:number;lastTick:number;
   drag:[PongDrag,PongDrag];lastHit:[number,number];hitPower:[number,number];netHits:number;
@@ -22,9 +22,9 @@ export type PongState = {
   targetPoints:5|10;
 };
 type PongDrag={active:boolean;startY:number;startDepth:number;lastAt:number;
- speed:number;travel:number;direction:number;forwardStroke:number;serveForwardTravel:number};
+ speed:number;travel:number;direction:number;lateralSpeed:number;forwardStroke:number;serveForwardTravel:number};
 export type PongView={
-  ball:{x:number;y:number;h:number;vx:number;vy:number;vh:number};
+  ball:{x:number;y:number;h:number;vx:number;vy:number;vh:number;sideSpin?:number};
   paddles:[number,number];depths:[number,number];scores:[number,number];serving:boolean;
   dragging:[boolean,boolean];swipe:[number,number];lastHit:[number,number];
   hitPower:[number,number];netHits:number;
@@ -91,12 +91,12 @@ function serve(pong:PongState,server:Side,now=Date.now()){
   pong.serveActive=true;pong.servePending=true;
   pong.serveBallHeld=false;
   pong.depths[server]=server===0?PONG_REST_DEPTH:1-PONG_REST_DEPTH;
-  pong.ball={x:server===0?.08:.92,y:pong.paddles[server],vx:0,vy:0,h:.24,vh:0};
+  pong.ball={x:server===0?.08:.92,y:pong.paddles[server],vx:0,vy:0,h:.24,vh:0,sideSpin:0};
   pong.serveAt=now+3000;
   pong.previousDepths=[...pong.depths];
   pong.previousPaddles=[...pong.paddles];
   pong.drag.forEach((drag,side)=>{drag.startY=pong.paddles[side];
-   drag.startDepth=pong.depths[side];drag.speed=0;drag.travel=0;
+   drag.startDepth=pong.depths[side];drag.speed=0;drag.travel=0;drag.lateralSpeed=0;
    drag.forwardStroke=0;drag.serveForwardTravel=0;});
 }
 function stageServeBall(pong:PongState){
@@ -106,13 +106,14 @@ function stageServeBall(pong:PongState){
  pong.ball.x=side===0?Math.max(.025,Math.min(.12,depth+.12)):
   Math.min(.975,Math.max(.88,depth-.12));
  pong.ball.y=Math.max(.16,Math.min(.84,pong.paddles[side]));
- pong.ball.h=.24;pong.ball.vx=0;pong.ball.vy=0;pong.ball.vh=0;
+ pong.ball.h=.24;pong.ball.vx=0;pong.ball.vy=0;pong.ball.vh=0;pong.ball.sideSpin=0;
 }
 function launchServe(pong:PongState,now:number){
  const side=pong.server,ball=pong.ball;
  ball.vx=(side===0?1:-1)*.52;
  ball.vy=Math.max(-.07,Math.min(.07,pong.drag[side].direction*.06));
  ball.vh=.18;
+ ball.sideSpin=0;
  pong.servePending=false;pong.serveBallHeld=false;pong.lastTick=now;
  pong.lastHit[side]=now;pong.hitPower[side]=Math.min(1,.3+pong.drag[side].serveForwardTravel*2);
  pong.previousDepths=[...pong.depths];pong.previousPaddles=[...pong.paddles];
@@ -122,13 +123,13 @@ export function createPong(targetPoints:5|10=PONG_WIN_SCORE):PongState{
   const now=Date.now();
   const firstServer:Side=Math.random()>.5?0:1;
   const p:PongState={
-    ball:{x:.5,y:.5,vx:.42,vy:.12,h:.42,vh:.4},
+    ball:{x:.5,y:.5,vx:.42,vy:.12,h:.42,vh:.4,sideSpin:0},
     paddles:[.5,.5],previousPaddles:[.5,.5],depths:[PONG_REST_DEPTH,1-PONG_REST_DEPTH],
     previousDepths:[PONG_REST_DEPTH,1-PONG_REST_DEPTH],
     scores:[0,0],serveAt:now,lastTick:now,
     drag:[0,1].map((side)=>({active:false,startY:.5,
      startDepth:side===0?PONG_REST_DEPTH:1-PONG_REST_DEPTH,
-     lastAt:now,speed:0,travel:0,direction:0,forwardStroke:0,serveForwardTravel:0})) as [PongDrag,PongDrag],
+     lastAt:now,speed:0,travel:0,direction:0,lateralSpeed:0,forwardStroke:0,serveForwardTravel:0})) as [PongDrag,PongDrag],
     lastHit:[0,0],hitPower:[0,0],netHits:0,
     firstServer,server:firstServer,lastHitter:firstServer,bounceQueue:[],serveActive:false,servePending:false,serveBallHeld:false,
     targetPoints
@@ -178,10 +179,14 @@ export function movePaddle(p:PongState,side:Side,input:PongPaddleInput,now=Date.
    drag.speed=Math.max(distance/elapsed,drag.speed*.45);
    drag.travel=Math.min(.8,drag.travel+distance);
    drag.direction=Math.sign(delta);
+   // Signed velocity matters: a slow reach and a fast sideways brush should
+   // not send the ball to the same place.
+   drag.lateralSpeed=Math.max(-4,Math.min(4,
+    drag.lateralSpeed*.35+(delta/elapsed)*.65));
    drag.lastAt=now;
   }else if(!drag.active){
    drag.startY=next;drag.startDepth=depth;
-   drag.speed=0;drag.travel=0;drag.lastAt=now;
+   drag.speed=0;drag.travel=0;drag.lateralSpeed=0;drag.lastAt=now;
   }
   p.paddles[side]=next;
   p.depths[side]=depth;
@@ -197,7 +202,7 @@ export function setPongDragging(p:PongState,side:Side,active:boolean,now=Date.no
   const drag=p.drag[side];
   if(active&&!drag.active){
    Object.assign(drag,{active:true,startY:p.paddles[side],startDepth:p.depths[side],
-    lastAt:now,speed:0,travel:0,direction:0,forwardStroke:0,serveForwardTravel:0});
+    lastAt:now,speed:0,travel:0,direction:0,lateralSpeed:0,forwardStroke:0,serveForwardTravel:0});
    if(p.servePending&&p.server===side&&now>=p.serveAt){
     stageServeBall(p);p.serveBallHeld=true;
    }
@@ -247,7 +252,10 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
  for(let k=0;k<steps;k++){
   const previousX=ball.x;
   const previousH=ball.h;
-  ball.x+=ball.vx*step;ball.y+=ball.vy*step;
+  ball.x+=ball.vx*step;
+  ball.vy+=(ball.sideSpin??0)*step;
+  ball.y+=ball.vy*step;
+  ball.sideSpin=(ball.sideSpin??0)*Math.exp(-.38*step);
   ball.vh+=GRAVITY*step;ball.h+=ball.vh*step;
   // Crossing a sideline is not a miss yet. Let the ball fall all the way to
   // the ground so either player can still reach an airborne wide shot.
@@ -273,6 +281,7 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
     if(p.bounceQueue.length===0)p.serveActive=false;
     ball.h=BALL_FLOOR;
     ball.vh=Math.max(p.serveActive?1:.90,-ball.vh*.9);
+    ball.sideSpin=(ball.sideSpin??0)*.6;
    }
   }
   for(const side of [0,1] as const){
@@ -305,20 +314,28 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
     Math.hypot(ball.y-p.paddles[side],ball.x-p.depths[side]);
    const power=drag.travel>.01?
     pongSwipePower(drag.speed,drag.travel,approach,now-drag.lastAt):.12;
-   // Place a forgiving return on the far half. Faster strokes shorten its
-   // flight, while the required lift changes with contact height and depth.
+   // The sideways component of the racket stroke and the contact offset set
+   // the outgoing angle. A brushing stroke also gives the ball a small curve.
+   // Solve initial velocity against that curve so the aimed bounce stays on
+   // the opposite court; sideways aim still depends on the actual stroke.
    const flightTime=.98-.12*power;
    const landingX=side===0?.74:.26;
-   const landingY=Math.max(.14,Math.min(.86,
-    ball.y+offset*.19+drag.direction*power*.05));
+   const lateralVelocity=Math.max(-1,Math.min(1,drag.lateralSpeed/2.4));
+   const lateralTravel=Math.max(-1,Math.min(1,
+    (p.paddles[side]-drag.startY)/.24));
+   const brush=Math.max(-1,Math.min(1,
+    lateralVelocity*.65+lateralTravel*.35));
+   const landingY=Math.max(.08,Math.min(.92,
+    ball.y+offset*.16+brush*(.20+.18*power)+ball.vy*.04));
+   ball.sideSpin=brush*(.18+.12*power);
    ball.vx=(landingX-ball.x)/flightTime;
-   ball.vy=(landingY-ball.y)/flightTime;
+   ball.vy=(landingY-ball.y)/flightTime-ball.sideSpin*flightTime*.46;
    ball.h=Math.max(ball.h,.18);
    ball.vh=(BALL_FLOOR-ball.h-GRAVITY*flightTime*flightTime/2)/flightTime;
    p.lastHit[side]=now;p.hitPower[side]=power;
    p.lastHitter=side;p.bounceQueue=[other(side)];p.serveActive=false;
    drag.startY=p.paddles[side];drag.startDepth=p.depths[side];
-   drag.speed*=.25;drag.travel=0;
+   drag.speed*=.25;drag.travel=0;drag.lateralSpeed=0;
   }
  }
  p.previousDepths=[...p.depths];

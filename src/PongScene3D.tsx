@@ -301,7 +301,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    const lead=next.serving?0:THREE.MathUtils.clamp(
     (now-receivedAt.current)/1000+.045,0,.12);
    const ballTarget={x:next.ball.x+next.ball.vx*lead,
-    y:next.ball.y+next.ball.vy*lead,
+    y:next.ball.y+next.ball.vy*lead+(next.ball.sideSpin??0)*lead*lead*.5,
     h:next.ball.h+next.ball.vh*lead-1.1*lead*lead};
    const gap=Math.hypot(ballTarget.x-smooth.x,ballTarget.y-smooth.y);
    const blend=1-Math.exp(-48*dt);

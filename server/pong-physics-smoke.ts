@@ -77,6 +77,43 @@ const fast=draggedHit(75,.26),slow=draggedHit(600,.26),short=draggedHit(75,.05);
 assert.ok(fast>slow&&fast>short,`Power should grow with drag speed and travel: ${fast}, ${slow}, ${short}`);
 assert.ok(fast<=1,"Swipe power should be capped");
 console.log("PASS: faster and longer drags produce stronger physical strikes.");
+function sidewaysReturn(side:0|1,travel:number,duration=70){
+ const p=createPong();p.servePending=false;p.serveActive=false;
+ p.lastHitter=side===0?1:0;p.bounceQueue=[];
+ const start=.5-travel;
+ movePaddle(p,side,start,fixed);
+ setPongDragging(p,side,true,fixed+10);
+ movePaddle(p,side,.5,fixed+10+duration);
+ p.lastTick=fixed+10+duration;
+ p.ball={x:side===0?-.075:1.075,y:.5,vx:side===0?-.4:.4,
+  vy:0,h:.38,vh:0,sideSpin:0};
+ let at=fixed+43+duration;
+ tickPong(p,at);
+ assert.ok(p.lastHit[side]>0,"Sideways stroke must contact the incoming ball");
+ const outgoingY=p.ball.vy,spin=p.ball.sideSpin??0;
+ let landingY:number|null=null;
+ for(at+=25;at<fixed+2400+duration;at+=25){
+  tickPong(p,at);
+  if(p.bounceQueue.length===0){landingY=p.ball.y;break;}
+  if(p.scores[0]||p.scores[1])break;
+ }
+ assert.ok(landingY!==null&&p.scores[0]===0&&p.scores[1]===0,
+  "Angled return must clear the net and bounce on the far half: "+JSON.stringify(p.ball));
+ return {outgoingY,spin,landingY};
+}
+const aimRight=sidewaysReturn(0,.22);
+const aimLeft=sidewaysReturn(0,-.22);
+const gentleRight=sidewaysReturn(0,.22,500);
+const mirroredAim=sidewaysReturn(1,.22);
+assert.ok(aimRight.outgoingY>.1&&aimRight.spin>0&&aimRight.landingY!>.68,
+ "A rightward brush must send the ball to the right side");
+assert.ok(aimLeft.outgoingY<-.1&&aimLeft.spin<0&&aimLeft.landingY!<.32,
+ "A leftward brush must mirror the shot");
+assert.ok(gentleRight.landingY!<aimRight.landingY!-.09,
+ "A slower sideways sweep must produce a narrower angle");
+assert.ok(mirroredAim.outgoingY>.1&&mirroredAim.landingY!>.68,
+ "The far player's canonical sideways physics must match the near player's");
+console.log("PASS: actual sideways stroke speed, contact and spin steer legal returns for both players.");
 const swept=createPong();swept.servePending=false;swept.lastTick=fixed;
 swept.lastHitter=1;swept.bounceQueue=[];
 movePaddle(swept,0,.2,fixed-50);
@@ -180,6 +217,11 @@ assert.ok(assist.paddles[0]>.5&&assist.paddles[0]<.51,"Idle assist should move g
 const predicted=predictPongContact(assist.ball,0);
 assert.ok(predicted&&predicted.y>.75&&Number.isFinite(predicted.h)&&predicted.eta>0,
  "Prediction should include lateral arrival, time and airborne height");
+const spinning={x:.55,y:.5,vx:-.4,vy:0,h:.4,vh:.1,sideSpin:.3};
+const curved=predictPongContact(spinning,0);
+const straight=predictPongContact({...spinning,sideSpin:0},0);
+assert.ok(curved&&straight&&curved.y>straight.y+.1,
+ "Contact prediction must account for the ball's sideways curve");
 assert.ok(Math.abs(paddleSideAngle(.5,true)+Math.PI/2)<.001&&
  Math.abs(paddleSideAngle(.12,true))<.001&&
  Math.abs(paddleSideAngle(.88,true)+Math.PI)<.001,
