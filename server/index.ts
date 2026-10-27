@@ -771,9 +771,10 @@ io.on("connection", socket => {
     if(!state||state.room.game?.kind!=="pong"||state.room.game.phase!=="playing"||!state.room.game.pong)return;
     if(typeof value==="number")movePaddle(state.room.game.pong,state.side,value);
     else if(value&&typeof value==="object"){
-      const paddle=value as {y?:unknown;depth?:unknown};
+      const paddle=value as {y?:unknown;depth?:unknown;forwardStroke?:unknown};
       if(typeof paddle.y==="number"&&typeof paddle.depth==="number")
-        movePaddle(state.room.game.pong,state.side,{y:paddle.y,depth:paddle.depth});
+        movePaddle(state.room.game.pong,state.side,{y:paddle.y,depth:paddle.depth,
+          forwardStroke:typeof paddle.forwardStroke==="number"?paddle.forwardStroke:undefined});
     }
   });
   socket.on("game:close", (raw:unknown) => {

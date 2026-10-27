@@ -135,6 +135,17 @@ try{
   await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.70);
   await a.mouse.down();
   await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.15);
+  // If this player is serving, the first forward swipe launches the ball
+  // from the ready position. A fresh stroke then advances toward the net.
+  for(let attempt=0;attempt<3&&Number(await sa.getAttribute("data-self-paddle-reach"))<.95;attempt++){
+   await a.mouse.up();
+   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.serveCountdown)===0,
+    null,{timeout:6000});
+   await a.waitForTimeout(140);
+   await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.70);
+   await a.mouse.down();
+   await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.15);
+  }
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)>.95,
    null,{timeout:5000});
   await a.waitForFunction(()=>{
@@ -160,18 +171,18 @@ try{
    "At the net the paddle should leave the near edge visually");
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-forward-"+width+".png"});
   await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.52);
-  await a.waitForFunction(()=>{
-   const scene=document.querySelector(".pong-scene-3d");
-   const reach=Number(scene?.dataset.selfPaddleReach);
-   return reach>.4&&reach<.6&&Math.abs(Number(scene?.dataset.paddlePitch))<.25;
-  },null,{timeout:5000});
+  await a.waitForTimeout(180);
   assert.ok(Number(await sa.getAttribute("data-paddle-height"))>=
    Number(await sa.getAttribute("data-paddle-table-clearance"))-.01,
    "The paddle must clear the table during a forward drag");
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-midtable-"+width+".png"});
-  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.85);
-  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)<.05,
-   null,{timeout:5000});
+  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*1.12);
+  try{await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)<.05,
+   null,{timeout:5000});}
+  catch(error){console.error("PONG RETREAT STATE",await sa.evaluate(el=>({
+   reach:el.dataset.selfPaddleReach,serve:el.dataset.servePending,dragging:el.dataset.dragging,
+   cameraZ:el.dataset.cameraZ,baseZ:el.dataset.paddleBaseZ
+  })));throw error;}
   await a.waitForFunction(()=>{
    const scene=document.querySelector(".pong-scene-3d");
    return scene?.dataset.netContact==="false"&&

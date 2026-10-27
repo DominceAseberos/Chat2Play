@@ -30,6 +30,35 @@ for(let at=fixed+3193;at<fixed+5600;at+=33){
 assert.ok(serveOwnBounce&&serveOtherBounce,"A swipe serve must reach both sides of the table: "+
  JSON.stringify({serveOwnBounce,serveOtherBounce,ball:staged.ball,queue:staged.bounceQueue,scores:staged.scores,netHits:staged.netHits}));
 console.log("PASS: a three-count stages the ball, then only the server's swipe launches it.");
+const parked=createPong();parked.server=0;parked.firstServer=0;parked.lastHitter=0;
+parked.bounceQueue=[0,1];parked.serveAt=fixed+3000;parked.lastTick=fixed;
+movePaddle(parked,0,{y:.5,depth:.46,forwardStroke:0},fixed+1000);
+assert.equal(parked.depths[0],.10,"Serving paddle stays before the middle of the board");
+setPongDragging(parked,0,true,fixed+3100);
+movePaddle(parked,0,{y:.8,depth:.46,forwardStroke:0},fixed+3120);
+assert.equal(parked.ball.vx,0,"Sideways motion at the serve limit must not launch");
+assert.ok(Math.abs(parked.ball.y-.8)<.001,"The waiting ball follows sideways aim");
+movePaddle(parked,0,{y:.8,depth:.46,forwardStroke:.11},fixed+3140);
+assert.ok(parked.ball.vx>0&&!parked.servePending,
+ "A forward swipe must launch even when the paddle is already at its serve limit");
+let parkedOwn=false,parkedOther=false;
+for(let at=fixed+3173;at<fixed+5500;at+=33){
+ tickPong(parked,at);
+ if(parked.bounceQueue.length===1)parkedOwn=true;
+ if(parkedOwn&&parked.bounceQueue.length===0){parkedOther=true;break;}
+ if(parked.scores[0]||parked.scores[1])break;
+}
+assert.ok(parkedOwn&&parkedOther,"The limit-position serve must still bounce on both sides");
+const mirrored=createPong();mirrored.server=1;mirrored.firstServer=1;mirrored.lastHitter=1;
+mirrored.bounceQueue=[1,0];mirrored.serveAt=fixed;mirrored.lastTick=fixed;
+movePaddle(mirrored,1,{y:.5,depth:.54,forwardStroke:0},fixed-10);
+assert.equal(mirrored.depths[1],.90,"The other serving paddle mirrors the same limit");
+setPongDragging(mirrored,1,true,fixed+10);
+movePaddle(mirrored,1,{y:.3,depth:.54,forwardStroke:0},fixed+20);
+assert.equal(mirrored.ball.vx,0);
+movePaddle(mirrored,1,{y:.3,depth:.54,forwardStroke:.11},fixed+40);
+assert.ok(mirrored.ball.vx<0&&!mirrored.servePending,"The far player can also serve from the limit");
+console.log("PASS: either server can aim sideways, then serve by swiping forward from the limit.");
 function draggedHit(duration:number,travel:number){
  const p=createPong();p.serveAt=0;p.servePending=false;
  p.lastHitter=1;p.bounceQueue=[];

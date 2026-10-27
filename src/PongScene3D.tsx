@@ -2,11 +2,11 @@ import {useEffect,useRef} from "react";
 import * as THREE from "three";
 import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 import type {Game,Side} from "./Pieces";
-import {PONG_BACK_REACH,paddleSideAngle,pongContactPose,pongDepthFromReach,pongReachFromDepth,
+import {PONG_BACK_REACH,PONG_SERVE_FORWARD_LIMIT,paddleSideAngle,pongContactPose,pongDepthFromReach,pongReachFromDepth,
  pongSwingMotion,pongSwipePower,predictPongContact,type PongContactPose} from "./pongSwing";
 
 type Pong=NonNullable<Game["pong"]>;
-type Props={side:Side;snapshot:Pong;onPaddle:(value:{y:number;depth:number})=>void;
+type Props={side:Side;snapshot:Pong;onPaddle:(value:{y:number;depth:number;forwardStroke:number})=>void;
  onDrag:(active:boolean)=>void;onReady:()=>void;active:boolean};
 
 // Server continues to simulate canonical sideways Pong; only the camera
@@ -186,9 +186,10 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
   resize();const observer=new ResizeObserver(resize);observer.observe(host);
   const toView=(x:number,y:number)=>side===0?{x:y,y:1-x}:{x:1-y,y:x};
   let raf=0,alive=true,previous=performance.now(),lastSent=0,down=false,id=-1;
-  let pendingPaddle:{y:number;depth:number}|null=null,sendTimer:ReturnType<typeof setTimeout>|null=null;
+  let pendingPaddle:{y:number;depth:number;forwardStroke:number}|null=null,sendTimer:ReturnType<typeof setTimeout>|null=null;
   let lastInputX:number|null=null,localLeanMomentum=0;
   let pointerStartX=0,pointerStartY=0,swipeStartX=.5,swipeStartReach=0;
+  let lastPointerY=0,forwardStroke=0;
   let swipeTravel=0,swipeSpeed=0,lastSwipeMoveAt=0;
   let lastInputReach:number|null=null;
   let localSwipePreview=0,localSwipePreviewAt=0;
@@ -207,7 +208,12 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     1.7*(event.clientX-pointerStartX)/Math.max(rect.width,1),-.35,1.35);
    const reach=THREE.MathUtils.clamp(swipeStartReach+
     (pointerStartY-event.clientY)/Math.max(rect.height*.38,1),PONG_BACK_REACH,1);
-   const depth=pongDepthFromReach(reach,side);
+   let depth=pongDepthFromReach(reach,side);
+   if(latest.current.serving&&latest.current.server===side)
+    depth=side===0?Math.min(depth,PONG_SERVE_FORWARD_LIMIT):Math.max(depth,1-PONG_SERVE_FORWARD_LIMIT);
+   if(down){forwardStroke=Math.min(3,forwardStroke+
+    Math.max(0,(lastPointerY-event.clientY)/Math.max(rect.height,1)));}
+   lastPointerY=event.clientY;
    const now=performance.now();
    // Accumulate a small directional impulse. Frame damping makes it settle
    // naturally even when pointer events arrive at uneven intervals.
@@ -232,7 +238,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    lastInputX=fraction;lastInputReach=reach;
    const canonical=side===0?fraction:1-fraction;
    localPaddleTarget={y:canonical,depth};lastLocalInputAt=now;
-   pendingPaddle={y:canonical,depth};
+   pendingPaddle={y:canonical,depth,forwardStroke};
    if(forceSend||now-lastSent>=25)flushPaddle();
    else if(sendTimer===null)sendTimer=setTimeout(flushPaddle,25-(now-lastSent));
   }
@@ -241,6 +247,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    if(down)return;
    down=true;id=e.pointerId;
    pointerStartX=e.clientX;pointerStartY=e.clientY;
+   lastPointerY=e.clientY;forwardStroke=0;
    const target=localPaddleTarget??{y:latest.current.paddles[side],depth:latest.current.depths[side]};
    swipeStartX=side===0?target.y:1-target.y;
    swipeStartReach=pongReachFromDepth(target.depth,side);
@@ -273,6 +280,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    let resetBall=false;
    if(next!==observedSnapshot){
     const before=observedSnapshot.ball,after=next.ball;
+    if(next.serving&&!observedSnapshot.serving&&!down)localPaddleTarget=null;
     resetBall=next.serving!==observedSnapshot.serving||
      before.vx*after.vx<0||next.lastHit.some((hit,index)=>hit>observedSnapshot.lastHit[index]);
     for(const player of [0,1] as const){

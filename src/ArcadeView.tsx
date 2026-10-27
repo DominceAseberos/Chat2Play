@@ -8,7 +8,7 @@ import "./arcade.css";
 type MemorySymbol = "sun" | "moon" | "heart" | "star" | "gem" | "zap";
 type ArcadeProps = {
  game: Game; side: Side; onFlip:(index:number)=>void;
- onPaddle:(value:{y:number;depth:number})=>void;
+ onPaddle:(value:{y:number;depth:number;forwardStroke:number})=>void;
  onDrag:(active:boolean)=>void;onSceneReady:()=>void;
  onMinimize:()=>void; onClose:()=>void; onReplay:(kind:Kind)=>void;questionPending:boolean;
 };
@@ -68,7 +68,7 @@ export function paddleFromScreenX(x:number,side:Side){
  return Math.max(-.35,Math.min(1.35,side===0?x:1-x));
 }
 function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay,onChat,questionPending}:{game:Game;side:Side;
- onPaddle:(value:{y:number;depth:number})=>void;onDrag:(active:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void;onChat:()=>void;questionPending:boolean}){
+ onPaddle:(value:{y:number;depth:number;forwardStroke:number})=>void;onDrag:(active:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void;onChat:()=>void;questionPending:boolean}){
  const state=game.pong;
  if(!state)return null;
  const opponent=side===0?1:0;

@@ -11,6 +11,7 @@ const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,valu
 export const PONG_REST_DEPTH=-.10;
 export const PONG_BACK_LIMIT=-.38;
 export const PONG_NET_LIMIT=.46;
+export const PONG_SERVE_FORWARD_LIMIT=.10;
 export const PONG_BACK_REACH=(PONG_BACK_LIMIT-PONG_REST_DEPTH)/(PONG_NET_LIMIT-PONG_REST_DEPTH);
 
 // Depth is measured along the table: player 0 approaches the net by moving

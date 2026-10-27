@@ -25,11 +25,19 @@ try{
  await b.getByRole("button",{name:"Accept invitation"}).first().click();
  await Promise.all(pages.map(p=>p.locator(".pong-scene-3d").waitFor()));
  await Promise.all(pages.map(p=>p.locator(".pong-load-screen").waitFor({state:"hidden",timeout:20000})));
- await a.waitForFunction(()=>document.querySelector(".pong-serve-note strong")?.textContent==="Serve!",null,{timeout:8000});
  const server=await a.locator(".pong-swipe-hud").textContent().then(s=>s.includes("SWIPE FORWARD"))?a:b;
  const scene=server.locator(".pong-scene-3d"),rect=await scene.boundingBox();
  assert.ok(rect,"The serving scene must be visible");
  const cx=rect.x+rect.width*.5,cy=rect.y+rect.height*.65;
+ // Park at the forward serve limit during the countdown. Previously this
+ // made a later forward swipe impossible to register.
+ await server.mouse.move(cx,cy);await server.mouse.down();
+ await server.mouse.move(cx,cy-rect.height*.38,{steps:6});await server.mouse.up();
+ await server.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)>.3,
+  null,{timeout:4000});
+ assert.ok(Number(await scene.getAttribute("data-self-paddle-reach"))<.4,
+  "The serving paddle should stop before the middle of the board");
+ await a.waitForFunction(()=>document.querySelector(".pong-serve-note strong")?.textContent==="Serve!",null,{timeout:8000});
  await server.mouse.move(cx,cy);await server.mouse.down();
  await server.mouse.move(cx+rect.width*.1,cy,{steps:4});
  await server.mouse.move(cx,cy,{steps:4});await server.mouse.up();

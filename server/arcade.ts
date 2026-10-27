@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import {PONG_BACK_LIMIT,PONG_NET_LIMIT,PONG_REST_DEPTH,pongSwipePower,predictPongContact} from "../src/pongSwing.js";
+import {PONG_BACK_LIMIT,PONG_NET_LIMIT,PONG_REST_DEPTH,PONG_SERVE_FORWARD_LIMIT,pongSwipePower,predictPongContact} from "../src/pongSwing.js";
 
 export type Side = 0 | 1;
 export type SymbolId = "sun" | "moon" | "heart" | "star" | "gem" | "zap";
@@ -22,7 +22,7 @@ export type PongState = {
   targetPoints:5|10;
 };
 type PongDrag={active:boolean;startY:number;startDepth:number;lastAt:number;
- speed:number;travel:number;direction:number};
+ speed:number;travel:number;direction:number;forwardStroke:number;serveForwardTravel:number};
 export type PongView={
   ball:{x:number;y:number;h:number;vx:number;vy:number;vh:number};
   paddles:[number,number];depths:[number,number];scores:[number,number];serving:boolean;
@@ -34,7 +34,8 @@ export const PONG_PADDLE_HALF = 0.23;
 export const PONG_RADIUS = 0.014;
 export const PONG_WIN_SCORE = 5;
 export const PONG_SIDE_REACH = 0.35;
-export type PongPaddleInput=number|{y:number;depth:number};
+export type PongPaddleInput=number|{y:number;depth:number;forwardStroke?:number};
+const SERVE_STROKE_MIN=.08;
 
 export function createMemory(): MemoryState {
   const deck = [...SYMBOLS,...SYMBOLS];
@@ -89,19 +90,21 @@ function serve(pong:PongState,server:Side,now=Date.now()){
   pong.server=server;pong.lastHitter=server;pong.bounceQueue=[server,other(server)];
   pong.serveActive=true;pong.servePending=true;
   pong.serveBallHeld=false;
+  pong.depths[server]=server===0?PONG_REST_DEPTH:1-PONG_REST_DEPTH;
   pong.ball={x:server===0?.08:.92,y:pong.paddles[server],vx:0,vy:0,h:.24,vh:0};
   pong.serveAt=now+3000;
   pong.previousDepths=[...pong.depths];
   pong.previousPaddles=[...pong.paddles];
   pong.drag.forEach((drag,side)=>{drag.startY=pong.paddles[side];
-   drag.startDepth=pong.depths[side];drag.speed=0;drag.travel=0;});
+   drag.startDepth=pong.depths[side];drag.speed=0;drag.travel=0;
+   drag.forwardStroke=0;drag.serveForwardTravel=0;});
 }
 function stageServeBall(pong:PongState){
  const side=pong.server,depth=pong.depths[side];
  // Keep the waiting ball close to the baseline, ahead of the bat. It must
  // stay put during a stroke so the player can actually swing into it.
- pong.ball.x=side===0?Math.max(.025,Math.min(.18,depth+.12)):
-  Math.min(.975,Math.max(.82,depth-.12));
+ pong.ball.x=side===0?Math.max(.025,Math.min(.12,depth+.12)):
+  Math.min(.975,Math.max(.88,depth-.12));
  pong.ball.y=Math.max(.16,Math.min(.84,pong.paddles[side]));
  pong.ball.h=.24;pong.ball.vx=0;pong.ball.vy=0;pong.ball.vh=0;
 }
@@ -111,6 +114,7 @@ function launchServe(pong:PongState,now:number){
  ball.vy=Math.max(-.07,Math.min(.07,pong.drag[side].direction*.06));
  ball.vh=.18;
  pong.servePending=false;pong.serveBallHeld=false;pong.lastTick=now;
+ pong.lastHit[side]=now;pong.hitPower[side]=Math.min(1,.3+pong.drag[side].serveForwardTravel*2);
  pong.previousDepths=[...pong.depths];pong.previousPaddles=[...pong.paddles];
  pong.drag[side].speed=0;pong.drag[side].travel=0;
 }
@@ -124,7 +128,7 @@ export function createPong(targetPoints:5|10=PONG_WIN_SCORE):PongState{
     scores:[0,0],serveAt:now,lastTick:now,
     drag:[0,1].map((side)=>({active:false,startY:.5,
      startDepth:side===0?PONG_REST_DEPTH:1-PONG_REST_DEPTH,
-     lastAt:now,speed:0,travel:0,direction:0})) as [PongDrag,PongDrag],
+     lastAt:now,speed:0,travel:0,direction:0,forwardStroke:0,serveForwardTravel:0})) as [PongDrag,PongDrag],
     lastHit:[0,0],hitPower:[0,0],netHits:0,
     firstServer,server:firstServer,lastHitter:firstServer,bounceQueue:[],serveActive:false,servePending:false,serveBallHeld:false,
     targetPoints
@@ -154,12 +158,21 @@ export function movePaddle(p:PongState,side:Side,input:PongPaddleInput,now=Date.
    Math.max(PONG_BACK_LIMIT,Math.min(PONG_NET_LIMIT,requestedDepth)):
    Math.max(1-PONG_NET_LIMIT,Math.min(1-PONG_BACK_LIMIT,requestedDepth));
   if(p.servePending&&p.server===side)
-   depth=side===0?Math.min(depth,.10):Math.max(depth,.90);
+   depth=side===0?Math.min(depth,PONG_SERVE_FORWARD_LIMIT):Math.max(depth,1-PONG_SERVE_FORWARD_LIMIT);
   if(p.servePending&&p.server===side&&now>=p.serveAt&&!p.serveBallHeld){
    stageServeBall(p);p.serveBallHeld=true;
   }
   const drag=p.drag[side],delta=next-p.paddles[side],depthDelta=depth-p.depths[side];
   const distance=Math.hypot(delta,depthDelta);
+  const rawStroke=typeof input==="number"?undefined:input.forwardStroke;
+  const hasStroke=typeof rawStroke==="number"&&Number.isFinite(rawStroke)&&rawStroke>=0&&rawStroke<=3;
+  const forwardDepth=side===0?depthDelta:-depthDelta;
+  if(drag.active){
+   const forwardStep=hasStroke?Math.max(0,rawStroke-drag.forwardStroke):Math.max(0,forwardDepth);
+   if(hasStroke)drag.forwardStroke=Math.max(drag.forwardStroke,rawStroke);
+   if(p.servePending&&p.server===side&&now>=p.serveAt)
+    drag.serveForwardTravel=Math.min(3,drag.serveForwardTravel+forwardStep);
+  }
   if(drag.active&&distance>.0001){
    const elapsed=Math.max(.016,Math.min((now-drag.lastAt)/1000,.2));
    drag.speed=Math.max(distance/elapsed,drag.speed*.45);
@@ -174,11 +187,8 @@ export function movePaddle(p:PongState,side:Side,input:PongPaddleInput,now=Date.
   p.depths[side]=depth;
   if(p.servePending&&p.server===side){
    if(!p.serveBallHeld)stageServeBall(p);
-   const forward=side===0?depthDelta:-depthDelta;
-   const face=depth+(side===0?PONG_RADIUS:-PONG_RADIUS);
-   const remaining=side===0?p.ball.x-face:face-p.ball.x;
-   if(now>=p.serveAt&&drag.active&&forward>.003&&drag.travel>.035&&
-    remaining<=.018&&Math.abs(p.ball.y-next)<=PONG_PADDLE_HALF+PONG_RADIUS)
+   else p.ball.y=Math.max(.16,Math.min(.84,next));
+   if(now>=p.serveAt&&drag.active&&drag.serveForwardTravel>=SERVE_STROKE_MIN)
     launchServe(p,now);
   }
 }
@@ -187,7 +197,7 @@ export function setPongDragging(p:PongState,side:Side,active:boolean,now=Date.no
   const drag=p.drag[side];
   if(active&&!drag.active){
    Object.assign(drag,{active:true,startY:p.paddles[side],startDepth:p.depths[side],
-    lastAt:now,speed:0,travel:0,direction:0});
+    lastAt:now,speed:0,travel:0,direction:0,forwardStroke:0,serveForwardTravel:0});
    if(p.servePending&&p.server===side&&now>=p.serveAt){
     stageServeBall(p);p.serveBallHeld=true;
    }
@@ -201,6 +211,7 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
  if(p.servePending){
   if(now>=p.serveAt&&p.drag[p.server].active&&!p.serveBallHeld)p.serveBallHeld=true;
   if(!p.serveBallHeld)stageServeBall(p);
+  else p.ball.y=Math.max(.16,Math.min(.84,p.paddles[p.server]));
   p.previousDepths=[...p.depths];p.previousPaddles=[...p.paddles];return null;
  }
  const point=(winner:Side):Side|null=>{
