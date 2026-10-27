@@ -79,7 +79,7 @@ try{
    reach:el.dataset.selfPaddleReach,model:el.dataset.paddleModel
   })));throw error;}
   const edge=await sa.evaluate(el=>({x:Number(el.dataset.selfPaddleX),roll:Number(el.dataset.paddleRoll)}));
-  assert.ok(edge.x>.68,"Drag should move the paddle toward the right edge: "+JSON.stringify(edge));
+  assert.ok(edge.x>1.1,"Drag should move the paddle past the camera edge: "+JSON.stringify(edge));
   assert.ok(Math.abs(Math.abs(edge.roll)-Math.PI/2)>.35,
    "Paddle should rotate away from its upright center angle: "+JSON.stringify(edge));
   const powerHandle=await a.waitForFunction(()=>window.__pongMaxPower>.16?window.__pongMaxPower:false,
@@ -89,11 +89,18 @@ try{
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-drag-"+width+".png"});
   await a.mouse.up();await a.waitForTimeout(75);
   assert.equal(await sa.getAttribute("data-dragging"),"false");
-  console.log("PASS PONG stationary press stays weak; dragging generates strike power");
+  console.log("PASS PONG stationary press stays weak; dragging reaches past camera edge");
+  await a.mouse.move(rect.x+rect.width*.82,rect.y+rect.height*.70);
+  await a.mouse.down();
+  await a.mouse.move(rect.x+rect.width*.32,rect.y+rect.height*.70);
+  await a.mouse.up();
+  await a.waitForFunction(()=>{
+   const x=Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleX);
+   return x>.42&&x<.58;
+  },null,{timeout:5000});
   await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.70);
   await a.mouse.down();
-  await a.mouse.move(rect.x+rect.width*.16,rect.y+rect.height*.70);
-  await a.mouse.move(rect.x+rect.width*.16,rect.y+rect.height*.15);
+  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.15);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)>.95,
    null,{timeout:5000});
   await a.waitForFunction(()=>{
@@ -118,7 +125,7 @@ try{
   assert.ok(Number(await sa.getAttribute("data-paddle-base-z"))<.7,
    "At the net the paddle should leave the near edge visually");
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-forward-"+width+".png"});
-  await a.mouse.move(rect.x+rect.width*.16,rect.y+rect.height*.52);
+  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.52);
   await a.waitForFunction(()=>{
    const scene=document.querySelector(".pong-scene-3d");
    const reach=Number(scene?.dataset.selfPaddleReach);
@@ -128,7 +135,7 @@ try{
    Number(await sa.getAttribute("data-paddle-table-clearance"))-.01,
    "The paddle must clear the table during a forward drag");
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-midtable-"+width+".png"});
-  await a.mouse.move(rect.x+rect.width*.16,rect.y+rect.height*.85);
+  await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.85);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)<.05,
    null,{timeout:5000});
   await a.waitForFunction(()=>{

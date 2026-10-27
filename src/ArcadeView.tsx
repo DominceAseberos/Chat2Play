@@ -64,7 +64,7 @@ export function projectPongForSide(x:number,y:number,side:Side){
  return side===0?{x:y,y:1-x}:{x:1-y,y:x};
 }
 export function paddleFromScreenX(x:number,side:Side){
- return Math.max(0,Math.min(1,side===0?x:1-x));
+ return Math.max(-.35,Math.min(1.35,side===0?x:1-x));
 }
 function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay}:{game:Game;side:Side;
  onPaddle:(value:{y:number;depth:number})=>void;onDrag:(active:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void}){
@@ -77,9 +77,9 @@ function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay}:{game:Game;
     <PongScene3D snapshot={state} side={side} onPaddle={onPaddle}
      onDrag={onDrag} onReady={onSceneReady} active={game.phase==="playing"}/>
    </Suspense>
-   <div className="pong-floating-scores" aria-label="Scores, first to five">
+   <div className="pong-floating-scores" aria-label="Scores, first to eleven, win by two">
     <div className="pong-floating-score opponent"><span>STRANGER</span><strong>{state.scores[opponent]}</strong></div>
-    <span className="pong-first-to">FIRST TO 5</span>
+    <span className="pong-first-to">FIRST TO 11 · WIN BY 2</span>
     <div className="pong-floating-score self"><span>YOU</span><strong>{state.scores[side]}</strong></div>
    </div>
    {game.phase==="loading"&&<div className="pong-load-screen" role="status">

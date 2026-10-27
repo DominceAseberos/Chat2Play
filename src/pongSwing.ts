@@ -38,9 +38,11 @@ export function predictPongContact(ball:FlyingBall,side:0|1,
  const steps=Math.max(1,Math.ceil(eta/.012)),step=eta/steps;
  for(let i=0;i<steps;i++){
   y+=vy*step;vh-=2.2*step;h+=vh*step;
-  if(y<.014){y=.014;vy=Math.abs(vy)*.94;}
-  if(y>.986){y=.986;vy=-Math.abs(vy)*.94;}
-  if(h<.09){h=.09;vh=Math.max(.32,-vh*.82);}
+  if(y<-.5||y>1.5)return null;
+  if(h<.09){
+   if(y<0||y>1)return null;
+   h=.09;vh=Math.max(.90,-vh*.9);
+  }
  }
  return {y,h,eta};
 }

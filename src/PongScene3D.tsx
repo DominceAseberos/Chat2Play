@@ -64,8 +64,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
   box(5.42,.08,.09,"#e4e4ff",0,.81,0);
   for(const x of [-2.62,2.62])box(.09,.9,.09,"#b1a4ff",x,.48,0);
   for(const z of [-3.2,3.2])for(const x of [-1.95,1.95])box(.18,1.2,.18,"#65628c",x,-.72,z);
-  // Table side light strips.
-  for(const x of [-2.65,2.65])box(.075,.07,8.3,"#71e7fa",x,-.08,0);
+  // The white sideline marks the court; there are no side rails or walls.
   const paddles=[new THREE.Group(),new THREE.Group()];
   const buildPaddle=(own:boolean)=>{
    const g=new THREE.Group();
@@ -190,7 +189,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    // Keep the starting position under the player's control. Dragging upward
    // advances from behind the near edge; dragging downward retreats there.
    const fraction=THREE.MathUtils.clamp(swipeStartX+
-    (event.clientX-pointerStartX)/Math.max(rect.width,1),.16,.84);
+    1.7*(event.clientX-pointerStartX)/Math.max(rect.width,1),-.35,1.35);
    const reach=THREE.MathUtils.clamp(swipeStartReach+
     (pointerStartY-event.clientY)/Math.max(rect.height*.38,1),0,1);
    const depth=pongDepthFromReach(reach,side);
@@ -402,9 +401,12 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     const step=.075;
     const prev=px;
     px+=pvx*step;py+=pvy*step;pvh-=2.20*step;ph+=pvh*step;
-    if(ph<.09){ph=.09;pvh=Math.max(.32,-pvh*.82);}
-    if(py<.014||py>.986)pvy=-pvy;
-    if((prev-.5)*(px-.5)<=0&&ph<.26)pvx=-pvx*.42;
+    if(py<-.5||py>1.5||px<-.5||px>1.5){dot.visible=false;return;}
+    if(ph<.09){
+     if(px<0||px>1||py<0||py>1){dot.visible=false;return;}
+     ph=.09;pvh=Math.max(.90,-pvh*.9);
+    }
+    if((prev-.5)*(px-.5)<=0&&ph<.26){dot.visible=false;return;}
     const pos=toView(px,py);
     dot.position.set((pos.x-.5)*5,.31+Math.max(0,ph-.09)*2.8,(pos.y-.5)*8);
    });

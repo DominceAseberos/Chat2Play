@@ -18,6 +18,7 @@ export type PongState = {
   paddles:[number,number];depths:[number,number];previousDepths:[number,number];
   scores:[number,number];serveAt:number;lastTick:number;
   drag:[PongDrag,PongDrag];lastHit:[number,number];hitPower:[number,number];netHits:number;
+  firstServer:Side;server:Side;lastHitter:Side;bounceQueue:Side[];serveActive:boolean;
 };
 type PongDrag={active:boolean;startY:number;startDepth:number;lastAt:number;
  speed:number;travel:number;direction:number};
@@ -29,7 +30,8 @@ export type PongView={
 };
 export const PONG_PADDLE_HALF = 0.16;
 export const PONG_RADIUS = 0.014;
-export const PONG_WIN_SCORE = 5;
+export const PONG_WIN_SCORE = 11;
+export const PONG_SIDE_REACH = 0.35;
 export type PongPaddleInput=number|{y:number;depth:number};
 
 export function createMemory(): MemoryState {
@@ -80,16 +82,21 @@ export function memoryWinner(mem:MemoryState): Side|"draw" {
  // net impacts and paddle impulses are actual simulated values, not client
  // generated movement. Units are normalized to the table footprint.
 const BALL_FLOOR=.09,NET_HEIGHT=.26,GRAVITY=-2.20;
-function serve(pong:PongState,toward:Side){
-  pong.ball={x:.5,y:.34+Math.random()*.32,vx:(toward===1?1:-1)*(.39+Math.random()*.07),
-    vy:(Math.random()-.5)*.21,h:.42,vh:.46};
-  pong.serveAt=Date.now()+1100;
+const other=(side:Side):Side=>side===0?1:0;
+function serve(pong:PongState,server:Side,now=Date.now()){
+  pong.server=server;pong.lastHitter=server;pong.bounceQueue=[server,other(server)];
+  pong.serveActive=true;
+  pong.ball={x:server===0?.1:.9,y:.34+Math.random()*.32,
+    vx:(server===0?1:-1)*(.46+Math.random()*.03),
+    vy:(Math.random()-.5)*.08,h:.24,vh:.12};
+  pong.serveAt=now+1100;
   pong.previousDepths=[...pong.depths];
   pong.drag.forEach((drag,side)=>{drag.startY=pong.paddles[side];
    drag.startDepth=pong.depths[side];drag.speed=0;drag.travel=0;});
 }
 export function createPong():PongState{
   const now=Date.now();
+  const firstServer:Side=Math.random()>.5?0:1;
   const p:PongState={
     ball:{x:.5,y:.5,vx:.42,vy:.12,h:.42,vh:.4},
     paddles:[.5,.5],depths:[PONG_REST_DEPTH,1-PONG_REST_DEPTH],
@@ -98,9 +105,10 @@ export function createPong():PongState{
     drag:[0,1].map((side)=>({active:false,startY:.5,
      startDepth:side===0?PONG_REST_DEPTH:1-PONG_REST_DEPTH,
      lastAt:now,speed:0,travel:0,direction:0})) as [PongDrag,PongDrag],
-    lastHit:[0,0],hitPower:[0,0],netHits:0
+    lastHit:[0,0],hitPower:[0,0],netHits:0,
+    firstServer,server:firstServer,lastHitter:firstServer,bounceQueue:[],serveActive:false
   };
-  serve(p,Math.random()>.5?0:1);
+  serve(p,firstServer,now);
   return p;
 }
 export function pongView(p:PongState,now=Date.now()):PongView{
@@ -118,8 +126,8 @@ export function pongView(p:PongState,now=Date.now()):PongView{
 export function movePaddle(p:PongState,side:Side,input:PongPaddleInput,now=Date.now()){
   const y=typeof input==="number"?input:input?.y;
   const requestedDepth=typeof input==="number"?p.depths[side]:input?.depth;
-  if(!Number.isFinite(y)||y<0||y>1||!Number.isFinite(requestedDepth))return;
-  const next=Math.max(PONG_PADDLE_HALF,Math.min(1-PONG_PADDLE_HALF,y));
+  if(!Number.isFinite(y)||!Number.isFinite(requestedDepth))return;
+  const next=Math.max(-PONG_SIDE_REACH,Math.min(1+PONG_SIDE_REACH,y));
   const depth=side===0?
    Math.max(PONG_REST_DEPTH,Math.min(PONG_NET_LIMIT,requestedDepth)):
    Math.max(1-PONG_NET_LIMIT,Math.min(1-PONG_REST_DEPTH,requestedDepth));
@@ -150,6 +158,18 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
  const dt=Math.max(0,Math.min((now-p.lastTick)/1000,.05));
  p.lastTick=now;
  if(now<p.serveAt){p.previousDepths=[...p.depths];return null;}
+ const point=(winner:Side):Side|null=>{
+  p.scores[winner]++;
+  if(p.scores[winner]>=PONG_WIN_SCORE&&
+   p.scores[winner]-p.scores[other(winner)]>=2){
+   p.ball={x:.5,y:.5,vx:0,vy:0,h:.12,vh:0};
+   return winner;
+  }
+  const total=p.scores[0]+p.scores[1];
+  const change=Math.floor(total<20?total/2:total-10)%2;
+  serve(p,change===0?p.firstServer:other(p.firstServer),now);
+  return null;
+ };
  const ball=p.ball;
  // A small idle assist follows the future arrival point. Manual swipes always
  // take priority, and the limited speed cannot catch a badly placed paddle.
@@ -157,7 +177,8 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
   const drag=p.drag[side],prediction=predictPongContact(ball,side,p.depths[side]);
   if(!drag.active&&now-drag.lastAt>350&&prediction&&prediction.eta<.9){
    const shift=Math.max(-.17*dt,Math.min(.17*dt,prediction.y-p.paddles[side]));
-   p.paddles[side]=Math.max(PONG_PADDLE_HALF,Math.min(1-PONG_PADDLE_HALF,p.paddles[side]+shift));
+   p.paddles[side]=Math.max(-PONG_SIDE_REACH,
+    Math.min(1+PONG_SIDE_REACH,p.paddles[side]+shift));
   }
  }
  // Integrate height and gravity at substeps so low-power phones and network
@@ -167,20 +188,33 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
  const startDepths=[...p.previousDepths] as [number,number];
  for(let k=0;k<steps;k++){
   const previousX=ball.x;
+  const previousH=ball.h;
   ball.x+=ball.vx*step;ball.y+=ball.vy*step;
   ball.vh+=GRAVITY*step;ball.h+=ball.vh*step;
-  if(ball.h<BALL_FLOOR){
-    ball.h=BALL_FLOOR;
-    ball.vh=Math.max(.32,-ball.vh*.82);
+  // A shot that misses the table is a fault. After a legal bounce, the
+  // receiver may still return it from beyond the sideline or end line.
+  const outside=ball.y<0||ball.y>1||ball.x<0||ball.x>1;
+  if((outside&&p.bounceQueue.length>0)||
+   ball.y<-.5||ball.y>1.5||ball.x<-.5||ball.x>1.5){
+   return point(p.bounceQueue.length?other(p.lastHitter):p.lastHitter);
   }
-  if(ball.y<PONG_RADIUS){ball.y=PONG_RADIUS;ball.vy=Math.abs(ball.vy)*.94;}
-  if(ball.y>1-PONG_RADIUS){ball.y=1-PONG_RADIUS;ball.vy=-Math.abs(ball.vy)*.94;}
-  // Net in the middle has physical collision and kills speed.
+  // A serve that clips the net after its own bounce is replayed.
   if((previousX-.5)*(ball.x-.5)<=0&&Math.abs(ball.x-previousX)>.00001&&ball.h<NET_HEIGHT){
-    ball.x=previousX<.5?.49:.51;
-    ball.vx=-ball.vx*.42;
-    ball.vh=Math.max(.12,ball.vh*.45);
     p.netHits++;
+    if(p.serveActive&&p.bounceQueue.length===1){
+     serve(p,p.server,now);return null;
+    }
+    return point(other(p.lastHitter));
+  }
+  if(previousH>BALL_FLOOR&&ball.h<=BALL_FLOOR&&ball.vh<0){
+   if(outside)return point(p.bounceQueue.length?other(p.lastHitter):p.lastHitter);
+   const court:Side=ball.x<.5?0:1;
+   if(p.bounceQueue.length===0)return point(p.lastHitter);
+   if(p.bounceQueue[0]!==court)return point(other(p.lastHitter));
+   p.bounceQueue.shift();
+   if(p.bounceQueue.length===0)p.serveActive=false;
+   ball.h=BALL_FLOOR;
+   ball.vh=Math.max(.90,-ball.vh*.9);
   }
   for(const side of [0,1] as const){
    const toward=side===0?ball.vx<0:ball.vx>0;
@@ -194,6 +228,7 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
     previousX<startPlane&&ball.x>=collisionX;
    if(!toward||!crossed)continue;
    if(Math.abs(ball.y-p.paddles[side])>PONG_PADDLE_HALF+PONG_RADIUS)continue;
+   if(p.lastHitter===side||p.bounceQueue.length)continue;
    const drag=p.drag[side];
    // An aligned but idle paddle is not a strike. A recent released swipe can
    // still connect as the ball reaches the blade a fraction later.
@@ -212,19 +247,11 @@ export function tickPong(p:PongState,now=Date.now()):Side|null{
    ball.h=Math.max(ball.h,.18);
    ball.vh=.68+.27*power;
    p.lastHit[side]=now;p.hitPower[side]=power;
+   p.lastHitter=side;p.bounceQueue=[other(side)];p.serveActive=false;
    drag.startY=p.paddles[side];drag.startDepth=p.depths[side];
    drag.speed*=.25;drag.travel=0;
   }
  }
  p.previousDepths=[...p.depths];
- if(ball.x<-.21||ball.x>1.21){
-   const scorer:Side=ball.x<0?1:0;
-   p.scores[scorer]++;
-   if(p.scores[scorer]>=PONG_WIN_SCORE){
-     p.ball={x:.5,y:.5,vx:0,vy:0,h:.12,vh:0};
-     return scorer;
-   }
-   serve(p,scorer===0?1:0);
- }
  return null;
 }
