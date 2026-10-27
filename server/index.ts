@@ -64,7 +64,11 @@ app.get("/api/health", (_req, res) => res.json({ ok: true, service: "Chat2Play",
 // This keeps the browser and Socket.IO on one secure origin for live testing.
 if(process.env.NODE_ENV==="production"){
   const distDir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"../dist");
-  app.use(express.static(distDir,{index:"index.html",maxAge:"1h",etag:true}));
+  app.use(express.static(distDir,{index:"index.html",maxAge:"1h",etag:true,setHeaders:(res,filePath)=>{
+    const file=path.basename(filePath);
+    if(file==="sw.js"||file==="registerSW.js"||file==="site.webmanifest")
+      res.setHeader("Cache-Control","no-cache");
+  }}));
   app.use((req,res)=>{
     if(req.method!=="GET"||req.path.startsWith("/api/")||req.path.startsWith("/socket.io/")){
       res.status(404).json({error:"Not found"});

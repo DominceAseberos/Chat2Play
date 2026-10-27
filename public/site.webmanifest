@@ -2,10 +2,17 @@
   "name": "Chat2Play",
   "short_name": "Chat2Play",
   "description": "Meet, chat, and play together.",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
   "background_color": "#101118",
   "theme_color": "#101118",
+  "lang": "en",
+  "categories": ["social", "games", "entertainment"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192.png",
