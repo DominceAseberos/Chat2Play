@@ -31,12 +31,15 @@ black = material("Matte charcoal rubber", (0.045, 0.065, 0.082), 0.92)
 red = material("Crimson rubber", (0.68, 0.035, 0.057), 0.91)
 rim = material("Warm laminated edge", (0.61, 0.38, 0.19), 0.73)
 dark_edge = material("Dark edge binding", (0.105, 0.075, 0.063), 0.77)
-wood = material("Pale wood throat", (0.78, 0.53, 0.28), 0.76)
-grip = material("Teal grip", (0.012, 0.30, 0.27), 0.88)
-grip_band = material("Grip seam", (0.007, 0.19, 0.18), 0.96)
+wood = material("Pale wood throat", (0.79, 0.59, 0.38), 0.76)
+grip = material("Light wood handle", (0.84, 0.70, 0.53), 0.82)
+inlay = material("Navy handle inlay", (0.018, 0.10, 0.27), 0.72)
 ivory = material("Small ivory badge", (0.87, 0.83, 0.69), 0.65)
 
 N = 48
+# A representative Butterfly blade is 157 x 150 x 5.7 mm with a 100 x 25 mm
+# flared handle. The model's 1.33-unit head length maps to 157 mm, making
+# 0.048 units of wood 5.7 mm and the 0.082-unit covered blade about 9.7 mm.
 
 
 def outline(scale=1.0):
@@ -46,7 +49,7 @@ def outline(scale=1.0):
         # A slightly broad crown and a subtly narrowed throat distinguish the
         # head from a generic sphere or perfect ellipse.
         x = 0.665 * math.cos(t) * scale
-        z = 0.555 * math.sin(t) * (1 - 0.055 * math.cos(t)) * scale
+        z = 0.635 * math.sin(t) * (1 - 0.035 * math.cos(t)) * scale
         points.append((x, z))
     return points
 
@@ -92,13 +95,15 @@ def face_disc(name, depth, scale, mat):
 
 # Wood core, dark binding, and inset rubber sheets. Every face is geometry,
 # including the colored edge visible when the bat turns during a swing.
-ring_mesh("Laminated blade core", [(-0.066, 0.96), (-0.048, 1),
-                                  (0.048, 1), (0.066, 0.96)], rim)
-ring_mesh("Dark perimeter binding", [(-0.054, 1.012), (0.054, 1.012)], dark_edge)
-ring_mesh("Black rubber bevel", [(-0.088, 0.925), (-0.075, 0.965)], black)
-ring_mesh("Red rubber bevel", [(0.075, 0.965), (0.088, 0.925)], red)
-face_disc("Black playing face", -0.089, 0.925, black)
-face_disc("Red playing face", 0.089, 0.925, red)
+ring_mesh("Laminated blade core", [(-0.024, 0.975), (-0.022, 1),
+                                  (0.022, 1), (0.024, 0.975)], rim)
+ring_mesh("Dark perimeter binding", [(-0.021, 1.009), (0.021, 1.009)], dark_edge)
+ring_mesh("Black rubber bevel", [(-0.041, 0.925), (-0.037, 0.965)], black)
+ring_mesh("Red rubber bevel", [(0.037, 0.965), (0.041, 0.925)], red)
+ring_mesh("Front wood shoulder", [(-0.037, 0.965), (-0.024, 0.975)], rim)
+ring_mesh("Rear wood shoulder", [(0.024, 0.975), (0.037, 0.965)], rim)
+face_disc("Black playing face", -0.041, 0.925, black)
+face_disc("Red playing face", 0.041, 0.925, red)
 
 
 def handle_section(name, stations, mat, sides=16):
@@ -126,23 +131,33 @@ def handle_section(name, stations, mat, sides=16):
     return obj
 
 
-handle_section("Wood throat", [(.50, .085, .09), (.58, .10, .115),
-                                (.74, .115, .14), (.88, .12, .145)], wood)
-handle_section("Shaped teal handle", [(.79, .118, .143), (.86, .135, .15),
-                                      (1.17, .14, .155), (1.37, .125, .14),
-                                      (1.42, .10, .12)], grip)
-for at in (.93, 1.05, 1.17, 1.29):
-    handle_section(f"Grip band {at:.2f}", [(at, .142, .158),
-                                           (at + .014, .142, .158)], grip_band)
-handle_section("Wood butt cap", [(1.40, .105, .12), (1.44, .105, .12),
-                                 (1.47, .075, .09)], wood)
+handle_section("Wood throat", [(.50, .064, .072), (.58, .078, .086),
+                                (.74, .089, .097), (.86, .095, .103)], wood)
+handle_section("Flared wood handle", [(.79, .091, .098), (.88, .098, .105),
+                                      (1.22, .101, .106), (1.43, .102, .106),
+                                      (1.48, .088, .094)], grip)
+handle_section("Wood butt cap", [(1.475, .090, .095), (1.50, .090, .095),
+                                 (1.515, .065, .072)], wood)
+
+# A thin navy inset follows the handle's front. The light wood cheeks remain
+# visible on both sides, like a real flared shakehand handle.
+bpy.ops.mesh.primitive_cube_add(size=1, location=(1.165, -.106, 0))
+stripe = bpy.context.object
+stripe.name = "Navy front handle inlay"
+stripe.dimensions = (.59, .008, .054)
+bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+stripe.data.materials.append(inlay)
+stripe_bevel = stripe.modifiers.new("Rounded inlay edges", "BEVEL")
+stripe_bevel.width = .008
+stripe_bevel.segments = 2
+stripe.modifiers.new("Weighted inlay normals", "WEIGHTED_NORMAL")
 
 # A small badge on the visible throat provides a recognisable detail at game
 # scale without adding a texture download or excessive geometry.
-bpy.ops.mesh.primitive_cube_add(size=1, location=(.715, -.143, 0))
+bpy.ops.mesh.primitive_cube_add(size=1, location=(.715, -.106, 0))
 badge = bpy.context.object
 badge.name = "Ivory throat badge"
-badge.dimensions = (.095, .012, .072)
+badge.dimensions = (.075, .008, .06)
 bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 badge.data.materials.append(ivory)
 bevel = badge.modifiers.new("Soft badge corners", "BEVEL")

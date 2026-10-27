@@ -131,8 +131,9 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    new THREE.MeshBasicMaterial({color:"#111039",transparent:true,opacity:.28,depthWrite:false}));
   shadow.rotation.x=-Math.PI/2;shadow.position.y=.193;scene.add(shadow);
   const camera=new THREE.PerspectiveCamera(42,1,.1,70);
-  // Keep the near-end view centered, as in a first-person table tennis rally.
-  camera.position.set(0,6.35,10.65);camera.lookAt(0,.12,.35);
+  // The viewpoint follows the player's depth while looking down the table.
+  camera.position.set(0,6.35,11);camera.lookAt(0,.12,.35);
+  let cameraFocusZ=.35;
   const smooth={x:.5,y:.5,h:.42,paddles:[.5,.5],depths:[-.1,1.1]};
   const previousScreenX=[.5,.5],paddleLean=[0,0];
  // Transparent diminishing ball trail + future ballistic trajectory guide.
@@ -379,6 +380,13 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    host!.dataset.ballX=projected.x.toFixed(3);host!.dataset.ballY=projected.y.toFixed(3);
    host!.dataset.renderer="three";host!.dataset.drawCalls=String(renderer.info.render.calls);
    host!.dataset.ballHeight=next.ball.h?.toFixed(3)??"0";
+   const ownReach=pongReachFromDepth(smooth.depths[side],side);
+   const cameraBlend=1-Math.exp(-5*dt);
+   camera.position.z=THREE.MathUtils.lerp(camera.position.z,11-3.1*ownReach,cameraBlend);
+   camera.position.y=THREE.MathUtils.lerp(camera.position.y,6.35-.45*ownReach,cameraBlend);
+   cameraFocusZ=THREE.MathUtils.lerp(cameraFocusZ,.35-.55*ownReach,cameraBlend);
+   camera.lookAt(0,.12,cameraFocusZ);
+   host!.dataset.cameraZ=camera.position.z.toFixed(3);
    renderer.render(scene,camera);
    if(!readySent&&paddleModelReady){
     readySent=true;host!.dataset.sceneReadySent="true";readyCallback.current();

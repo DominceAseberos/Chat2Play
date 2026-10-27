@@ -57,6 +57,8 @@ try{
    "The Blender paddle should load in the game");
   assert.ok(Number(await sa.getAttribute("data-self-paddle-reach"))<.05,
    "The paddle should start behind the near edge of the board");
+  assert.ok(Number(await sa.getAttribute("data-camera-z"))>10.5,
+   "The resting camera should sit behind the board");
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-rest-center-"+width+".png"});
   await sa.evaluate(el=>{
    window.__pongMaxPower=0;
@@ -93,11 +95,15 @@ try{
   await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.15);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)>.95,
    null,{timeout:5000});
+  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.cameraZ)<9.5,
+   null,{timeout:5000});
   assert.ok(Number(await sa.getAttribute("data-paddle-base-z"))<.7,
    "At the net the paddle should leave the near edge visually");
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-forward-"+width+".png"});
   await a.mouse.move(rect.x+rect.width*.5,rect.y+rect.height*.85);
   await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)<.05,
+   null,{timeout:5000});
+  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.cameraZ)>10.2,
    null,{timeout:5000});
   const resting=await sa.evaluate(el=>({reach:Number(el.dataset.selfPaddleReach),
    z:Number(el.dataset.paddleBaseZ),side:el.dataset.perspective}));
