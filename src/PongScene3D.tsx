@@ -2,7 +2,7 @@ import {useEffect,useRef} from "react";
 import * as THREE from "three";
 import {GLTFLoader} from "three/addons/loaders/GLTFLoader.js";
 import type {Game,Side} from "./Pieces";
-import {paddleSideAngle,pongContactPose,pongDepthFromReach,pongReachFromDepth,
+import {PONG_BACK_REACH,paddleSideAngle,pongContactPose,pongDepthFromReach,pongReachFromDepth,
  pongSwingMotion,pongSwipePower,predictPongContact,type PongContactPose} from "./pongSwing";
 
 type Pong=NonNullable<Game["pong"]>;
@@ -66,10 +66,11 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
   for(const z of [-3.2,3.2])for(const x of [-1.95,1.95])box(.18,1.2,.18,"#65628c",x,-.72,z);
   // The white sideline marks the court; there are no side rails or walls.
   const paddles=[new THREE.Group(),new THREE.Group()];
-  const buildPaddle=(own:boolean)=>{
+  const buildPaddle=(player:Side,own:boolean)=>{
    const g=new THREE.Group();
-   // From the player's view, a real bat is broad with its grip to the side.
-   // Its dark back faces the camera while the red hitting face points up-court.
+   const rubber=player===0?"#202733":"#db3f46";
+   // A broad bat with a side grip. Both visible rubber faces use the
+   // player's color, regardless of which camera sees them.
    const blade=new THREE.Shape();
    blade.absellipse(0,0,.65,.54,0,Math.PI*2,false,0);
    const rim=new THREE.Mesh(new THREE.ExtrudeGeometry(blade,{depth:.09,bevelEnabled:true,
@@ -77,12 +78,12 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     material("#161c27",.04,.72));
    rim.position.z=-.045;g.add(rim);
    const faceShape=new THREE.ShapeGeometry(blade,20);
-   const back=new THREE.Mesh(faceShape,material(own?"#202733":"#db3f46",.02,.86));
+   const back=new THREE.Mesh(faceShape,material(rubber,.02,.86));
    back.scale.set(.96,.95,1);back.position.z=.074;g.add(back);
-   const front=new THREE.Mesh(faceShape,material(own?"#db3f46":"#202733",.02,.86));
+   const front=new THREE.Mesh(faceShape,material(rubber,.02,.86));
    front.scale.set(.96,.95,1);front.rotation.y=Math.PI;front.position.z=-.074;g.add(front);
    const woodMaterial=material("#d9a264",.02,.72);
-   const gripMaterial=material(own?"#1e9f81":"#c99e4e",.02,.75);
+   const gripMaterial=material(player===0?"#1e9f81":"#c99e4e",.02,.75);
    // Rotate the handle in the blade plane: the local -Y axis becomes the
    // player's right-hand grip, rather than a stick hanging below the bat.
    const handle=new THREE.Group();handle.position.set(own?.59:-.59,-.10,.025);
@@ -97,7 +98,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    g.scale.set(size,size*.82,size);
    return g;
   };
-  const me=buildPaddle(true),them=buildPaddle(false);
+  const me=buildPaddle(side,true),them=buildPaddle(side===0?1:0,false);
   paddles[side]=me;paddles[side===0?1:0]=them;scene.add(me,them);
   let paddleModelReady=false;
   new GLTFLoader().load("/models/pong/paddle.glb",asset=>{
@@ -111,14 +112,27 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
     }});
     target.clear();
     const model=asset.scene.clone(true);
-    // The far player shows the red face and has the grip mirrored, while
-    // motion still acts on the same outer paddle group as before.
+    // Both rubber faces belong to the player, not to the camera angle.
+    // Player 0 stays charcoal and player 1 stays red on both phones.
+    const rubberColor=player===0?"#202733":"#db3f46";
+    model.traverse(obj=>{if(!(obj instanceof THREE.Mesh))return;
+     const recolor=(mat:THREE.Material)=>{
+      if(mat.name!=="Matte charcoal rubber"&&mat.name!=="Crimson rubber")return mat;
+      const ownMaterial=mat.clone();
+      if(ownMaterial instanceof THREE.MeshStandardMaterial)ownMaterial.color.set(rubberColor);
+      return ownMaterial;
+     };
+     obj.material=Array.isArray(obj.material)?obj.material.map(recolor):recolor(obj.material);
+    });
+    // Mirror the far grip, while keeping the same player's rubber color.
     if(player!==side)model.rotation.y=Math.PI;
     target.add(model);
     const size=player===side?.9:.74;
     target.scale.set(size,size,size);
    }
    host.dataset.paddleModel="blender";
+   host.dataset.selfPaddleColor=side===0?"charcoal":"red";
+   host.dataset.opponentPaddleColor=side===0?"red":"charcoal";
    paddleModelReady=true;
   },undefined,()=>{
    host.dataset.paddleModel="fallback";
@@ -191,7 +205,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    const fraction=THREE.MathUtils.clamp(swipeStartX+
     1.7*(event.clientX-pointerStartX)/Math.max(rect.width,1),-.35,1.35);
    const reach=THREE.MathUtils.clamp(swipeStartReach+
-    (pointerStartY-event.clientY)/Math.max(rect.height*.38,1),0,1);
+    (pointerStartY-event.clientY)/Math.max(rect.height*.38,1),PONG_BACK_REACH,1);
    const depth=pongDepthFromReach(reach,side);
    const now=performance.now();
    // Accumulate a small directional impulse. Frame damping makes it settle
@@ -414,6 +428,7 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    host!.dataset.renderer="three";host!.dataset.drawCalls=String(renderer.info.render.calls);
    host!.dataset.ballHeight=next.ball.h?.toFixed(3)??"0";
    const ownReach=pongReachFromDepth(smooth.depths[side],side);
+   host!.parentElement!.dataset.farBack=ownReach<-.20?"true":"false";
    const ownScreenX=side===0?smooth.paddles[side]:1-smooth.paddles[side];
    const lateral=(ownScreenX-.5)*5*.68;
    const wide=THREE.MathUtils.smoothstep(Math.abs(ownScreenX-.5),.20,.60);
@@ -421,13 +436,16 @@ export default function PongScene3D({side,snapshot,onPaddle,onDrag,onReady,activ
    camera.position.x=THREE.MathUtils.lerp(camera.position.x,lateral*1.45*wide,cameraBlend);
    cameraFocusX=THREE.MathUtils.lerp(cameraFocusX,lateral*.38*wide,cameraBlend);
    camera.position.z=THREE.MathUtils.lerp(camera.position.z,
-    11-3.1*ownReach+Math.abs(lateral)*.85*wide,cameraBlend);
+    11-(ownReach<0?5:3.1)*ownReach+Math.abs(lateral)*.85*wide,cameraBlend);
    camera.position.y=THREE.MathUtils.lerp(camera.position.y,6.35-.45*ownReach,cameraBlend);
-   cameraFocusZ=THREE.MathUtils.lerp(cameraFocusZ,.35-.55*ownReach,cameraBlend);
+   cameraFocusZ=THREE.MathUtils.lerp(cameraFocusZ,
+    ownReach<0?.35-2.6*ownReach:.35-.55*ownReach,cameraBlend);
    camera.lookAt(cameraFocusX,.12,cameraFocusZ);
    host!.dataset.cameraX=camera.position.x.toFixed(3);
    host!.dataset.cameraFocusX=cameraFocusX.toFixed(3);
    host!.dataset.cameraZ=camera.position.z.toFixed(3);
+   host!.dataset.serveCountdown=String(next.serveCountdown);
+   host!.dataset.servePending=next.serving?"true":"false";
    renderer.render(scene,camera);
    if(!readySent&&paddleModelReady){
     readySent=true;host!.dataset.sceneReadySent="true";readyCallback.current();

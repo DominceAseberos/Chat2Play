@@ -21,6 +21,7 @@ export type ChatMessage = {
 };
 export type Game = {
   id:string; kind:Kind; phase:"invite"|"categories"|"settings"|"mic"|"loading"|"playing"|"finished"; by:Side;
+  pongTargetPoints?:5|10;
   foreheadOptions?:{difficulty:"easy"|"medium"|"hard";durationSeconds:number;categories:GameCategory[]};foreheadCategories?:GameCategory[];foreheadCategoryDraft?:GameCategory[];categoryAgreement?:[boolean,boolean];micReady?:[boolean,boolean];
   board?:(Side|null)[]; turn?:Side; winner?:Side|"draw"; ready:boolean[];
   reveal?:{choices:[Choice|null,Choice|null];winner:Side|"draw"};
@@ -28,7 +29,7 @@ export type Game = {
   pong?:{ball:{x:number;y:number;h:number;vx:number;vy:number;vh:number};
    paddles:[number,number];depths:[number,number];scores:[number,number];serving:boolean;
    dragging:[boolean,boolean];swipe:[number,number];lastHit:[number,number];
-   hitPower:[number,number];netHits:number};
+   hitPower:[number,number];netHits:number;targetPoints:5|10;server:Side;serveCountdown:number};
   rps?:{targetWins:number;scores:[number,number];round:number;stage:"choosing"|"chant"|"reveal";
     roundEndsAt:number;chantEndsAt:number;revealEndsAt:number;roundWinner?:Side|"draw";
     pausedBy:[boolean,boolean];pauseAt:number;
@@ -183,6 +184,7 @@ export function GamePanel({game,side,onRespond,onCategoriesAgree,onCategoriesCha
      <div className="invite-visual"><GameSymbol id={game.kind} size={40}/></div>
      <h4>{mine?"Invitation sent":"Game invitation"}</h4>
      <p>{mine?"Waiting for your partner to accept.":"Your partner wants to challenge you. Ready to play?"}</p>
+     {game.kind==="pong"&&<p>First to {game.pongTargetPoints??5} · win by 2</p>}
      {game.kind==="forehead"&&<p className="henyo-stage-note">Game setup opens after the invitation is accepted.</p>}
      {mine?<Spinner label="Waiting for response"/>:<div className="game-actions">
        <button className="secondary-button" onClick={()=>onRespond(false)}>Decline</button>

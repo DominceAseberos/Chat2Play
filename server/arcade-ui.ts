@@ -17,6 +17,7 @@ async function match(){
 async function propose(p:Page,name:string){
  await p.getByRole("button",{name:"Open mini games"}).click();
  await p.locator(".game-sidebar-open").getByRole("button",{name:new RegExp(name)}).first().click();
+ if(name==="Ping Pong")await p.getByRole("button",{name:"Send invitation"}).click();
 }
 async function accept(p:Page){
  await p.locator(".inline-game").getByRole("button",{name:/Let's play/}).click();

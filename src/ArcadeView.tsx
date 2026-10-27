@@ -77,24 +77,27 @@ function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay}:{game:Game;
     <PongScene3D snapshot={state} side={side} onPaddle={onPaddle}
      onDrag={onDrag} onReady={onSceneReady} active={game.phase==="playing"}/>
    </Suspense>
-   <div className="pong-floating-scores" aria-label="Scores, first to eleven, win by two">
-    <div className="pong-floating-score opponent"><span>STRANGER</span><strong>{state.scores[opponent]}</strong></div>
-    <span className="pong-first-to">FIRST TO 11 · WIN BY 2</span>
-    <div className="pong-floating-score self"><span>YOU</span><strong>{state.scores[side]}</strong></div>
+   <div className="pong-floating-scores" aria-label={`Scores, first to ${state.targetPoints}, win by two`}>
+    <div className={`pong-floating-score opponent team-${opponent}`}><span>STRANGER</span><strong>{state.scores[opponent]}</strong></div>
+    <span className="pong-first-to">FIRST TO {state.targetPoints} · WIN BY 2</span>
+    <div className={`pong-floating-score self team-${side}`}><span>YOU</span><strong>{state.scores[side]}</strong></div>
    </div>
    {game.phase==="loading"&&<div className="pong-load-screen" role="status">
      <div className="spinner"/> Loading 3D assets
      <small>{game.sceneReady?.[side]?"Your scene is ready. Waiting for your partner?":"Preparing physics and graphics?"}</small>
      <small>Player 1 {game.sceneReady?.[0]?"?":"?"} ? Player 2 {game.sceneReady?.[1]?"?":"?"}</small>
    </div>}
-   {state.serving&&game.phase==="playing"&&<span className="pong-serve-note">Next serve</span>}
+   {state.serving&&game.phase==="playing"&&<div className="pong-serve-note" role="status" aria-live="polite">
+    {state.serveCountdown>0?<><strong>{state.serveCountdown}</strong><span>{state.server===side?"Get ready to serve":"Partner serving soon"}</span></>:
+     <><strong>Serve!</strong><span>{state.server===side?"Swipe the paddle to serve":"Waiting for your partner's serve"}</span></>}
+   </div>}
    <div className="pong-swipe-hud" aria-label="Swipe strength">
     <span>DRAG INTO THE BALL</span><div className="pong-swipe-track"><i/></div>
     <small>Faster, longer swipes hit harder</small>
    </div>
    {game.phase==="finished"&&<div className="pong-result-float"><ResultBanner game={game} side={side} onReplay={onReplay}/></div>}
   </div>
-  <div className="pong-controls"><span className="pong-my-paddle"><span className="paddle-key bottom"/> Your paddle starts behind the table</span><span>Drag in any direction to strike</span></div>
+  <div className="pong-controls"><span className="pong-my-paddle"><span className={`paddle-key bottom team-${side}`}/> Your paddle starts behind the table</span><span>Drag in any direction to strike</span></div>
  </section>;
 }
 export function ArcadeView({game,side,onFlip,onPaddle,onDrag,onSceneReady,onMinimize,onClose,onReplay}:ArcadeProps){

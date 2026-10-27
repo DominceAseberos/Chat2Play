@@ -21,6 +21,7 @@ for(const [width,height] of [[390,844]]){
   const open=a.getByRole("button",{name:"Open mini games"});
   if(await open.isVisible())await open.click();
   await a.getByRole("button",{name:/Ping Pong.*Live arcade battle/}).first().click();
+  await a.getByRole("button",{name:"Send invitation"}).click();
   const acceptance=b.getByRole("button",{name:"Accept invitation"}).first();
   await acceptance.waitFor({timeout:8000});await acceptance.click();
   await Promise.all([a.getByRole("dialog",{name:"Ping Pong"}).waitFor({timeout:12000}),b.getByRole("dialog",{name:"Ping Pong"}).waitFor({timeout:12000})]);

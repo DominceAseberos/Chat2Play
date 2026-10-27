@@ -53,7 +53,9 @@ async function test(){
 
  const clearedA=wait(a,"game:state",g=>g===null),clearedB=wait(b,"game:state",g=>g===null);
  a.emit("game:close",{id:ma.id});await Promise.all([clearedA,clearedB]);
- const pongInvite=state(b,"pong","invite");a.emit("game:propose","pong");await pongInvite;
+ const pongInvite=state(b,"pong","invite");
+ a.emit("game:propose",{kind:"pong",options:{targetPoints:10}});
+ assert.equal((await pongInvite).pongTargetPoints,10);
  const pongLoadA=state(a,"pong","loading"),pongLoadB=state(b,"pong","loading");
  b.emit("game:respond",true);
  const [loading]=await Promise.all([pongLoadA,pongLoadB]);
@@ -63,6 +65,7 @@ async function test(){
  b.emit("pong:scene-ready",{id:loading.id});
  const [psa,psb]=await Promise.all([pongStartA,pongStartB]);
  assert.deepEqual(psa.pong.scores,[0,0]);assert.deepEqual(psa.pong.scores,psb.pong.scores);
+ assert.equal(psa.pong.targetPoints,10);assert.equal(psb.pong.targetPoints,10);
  console.log("✓ Ping Pong accepted by both players, matching initial scores");
  const movedA=state(a,"pong","playing",g=>g.pong.paddles[0]>.82);
  const movedB=state(b,"pong","playing",g=>g.pong.paddles[0]>.82);

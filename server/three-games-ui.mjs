@@ -27,6 +27,7 @@ async function invite({a,b},name){
  const option=a.getByRole("button",{name:new RegExp(name)}).first();
  await option.waitFor({state:"visible",timeout:12000});
  await option.evaluate(el=>el.click());
+ if(name==="Ping Pong")await a.getByRole("button",{name:"Send invitation"}).click();
  await b.getByRole("button",{name:"Accept invitation"}).first().waitFor({timeout:11000});
  await b.getByRole("button",{name:"Accept invitation"}).first().click();
 }

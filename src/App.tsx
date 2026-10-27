@@ -54,6 +54,8 @@ function App(){
  const [notice,setNotice]=useState("");
  const [pickerOpen,setPickerOpen]=useState(false);
  const [gamesOpen,setGamesOpen]=useState(false);
+ const [pongPreselectOpen,setPongPreselectOpen]=useState(false);
+ const [pongTargetPoints,setPongTargetPoints]=useState<5|10>(5);
  const [henyoSetupOpen,setHenyoSetupOpen]=useState(false);
  const [henyoDifficulty,setHenyoDifficulty]=useState<"easy"|"medium"|"hard">("medium");
  const [henyoMinutes,setHenyoMinutes]=useState(2);
@@ -247,25 +249,27 @@ function App(){
   activeMatch.current=false;if(matchTimer.current)clearTimeout(matchTimer.current);
   if(socket.connected)socket.emit(mode==="searching"?"queue:cancel":"match:leave");
   setMode("home");setHomeStep(setupCompleted?3:0);setMessages([]);setGame(null);setPickerOpen(false);
-  setGamesOpen(false);setPartnerTyping(false);setNextConfirm(false);setNotice("");
+  setGamesOpen(false);setPongPreselectOpen(false);setPartnerTyping(false);setNextConfirm(false);setNotice("");
  }
  function next(){
   if(!socket.connected)return;
   if(mode==="ended"){setNextConfirm(false);join();return;}
   activeMatch.current=false;if(matchTimer.current)clearTimeout(matchTimer.current);
-  setNextConfirm(false);setPickerOpen(false);setGamesOpen(false);
+  setNextConfirm(false);setPickerOpen(false);setGamesOpen(false);setPongPreselectOpen(false);
   setMode("searching");setMessages([]);setGame(null);setPartnerTyping(false);
   socket.emit("match:next",{gender,lookingFor,interests,fallback,isAdult:adult});
  }
  function requestNext(){if(autoConfirmNext)next();else setNextConfirm(true);}
- function inviteToGame(kind:Kind){
+ function inviteToGame(kind:Kind,targetPoints?:5|10){
   if(!canChat||(game&&(game.phase!=="finished"||game.rps?.rematch)))return;
+  if(kind==="pong"&&targetPoints===undefined){setPongPreselectOpen(true);return;}
   // Close the game picker as soon as a game is chosen.
   // The synchronized invitation remains visible in the chat.
+  setPongPreselectOpen(false);
   setGamesOpen(false);
   setPickerOpen(false);
   if(kind==="forehead")setHenyoCategoryConsent(false);
-  socket.emit("game:propose",kind);
+  socket.emit("game:propose",kind==="pong"?{kind,options:{targetPoints}}:kind);
  }
  // Broadcast category toggles while the inviter is editing, without implying
  // agreement. Only changes in active category/selection re-emit previews.
@@ -482,7 +486,18 @@ function App(){
        </div>
        <aside className={"game-sidebar"+(gamesOpen?" game-sidebar-open":"")}>
          <div className="sidebar-top"><span className="sidebar-kicker">PLAY & CONNECT</span><button type="button" className="sidebar-close icon-button" aria-label="Close games" onClick={()=>setGamesOpen(false)}><X size={19}/></button><h3>Break the ice <Gamepad2 size={20}/></h3><p>{game?.phase==="invite"?"Waiting for your partner to answer the invitation.":game?.phase==="categories"?"Both players must agree on the word categories.":game?.phase==="settings"?"Choosing difficulty and the timer.":game?.phase==="playing"?"Your game is currently in progress.":"Pick a game. Your partner chooses if they want to play."}</p></div>
-         {(!game||(game.phase==="finished"&&!game.rps?.rematch))&&<div className="game-list">{GAMES.map(g=><button type="button" key={g.id} disabled={!canChat} className="sidebar-game" onClick={()=>inviteToGame(g.id)}><span className={"sidebar-game-icon "+g.id}><GameSymbol id={g.id} size={22}/></span><span><strong>{g.title}</strong><small>{g.desc}</small></span><ArrowRight size={16}/></button>)}</div>}
+         {(!game||(game.phase==="finished"&&!game.rps?.rematch))&&
+          (pongPreselectOpen?<div className="pong-preselect rps-preselect">
+           <button type="button" className="secondary-button" onClick={()=>setPongPreselectOpen(false)}>Back to games</button>
+           <h4>Ping Pong match</h4>
+           <p>Choose the winning score before inviting your partner. Win by 2 points.</p>
+           <div className="rps-wins-options" role="group" aria-label="Ping Pong target score">
+            {([5,10] as const).map(n=><button key={n} type="button" aria-pressed={pongTargetPoints===n}
+             className={pongTargetPoints===n?"selected":""} onClick={()=>setPongTargetPoints(n)}>First to {n}</button>)}
+           </div>
+           <button type="button" className="primary-button" disabled={!canChat}
+            onClick={()=>inviteToGame("pong",pongTargetPoints)}>Send invitation <ArrowRight size={16}/></button>
+          </div>:<div className="game-list">{GAMES.map(g=><button type="button" key={g.id} disabled={!canChat} className="sidebar-game" onClick={()=>inviteToGame(g.id)}><span className={"sidebar-game-icon "+g.id}><GameSymbol id={g.id} size={22}/></span><span><strong>{g.title}</strong><small>{g.desc}</small></span><ArrowRight size={16}/></button>)}</div>)}
          {game&&<div className="sidebar-playing"><GamePanel game={game} side={side} onRespond={yes=>{if(canChat)socket.emit("game:respond",yes);}}
             onCategoriesAgree={categories=>{if(canChat)socket.emit("forehead:categories:agree",{id:game.id,confirmed:true,categories});}}
             onCategoriesChange={()=>{if(canChat)socket.emit("forehead:categories:request-change",{id:game.id});}}

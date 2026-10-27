@@ -27,6 +27,7 @@ type Game = {
     rematch?:{accepted:[boolean,boolean];expiresAt:number};
     roundChoices?:[Choice|null,Choice|null]};
   pongReady?:[boolean,boolean];
+  pongTargetPoints?:5|10;
   id: string; memory?: MemoryState; pong?: PongState; forehead?: ForeheadState; foreheadOptions?:ForeheadOptions; foreheadCategories?:GameCategory[]; foreheadCategoryDraft?:GameCategory[]; categoryAgreement?:[boolean,boolean];sceneReady?:[boolean,boolean];micReady?:[boolean,boolean];
 };
 type Room = { id: string; players: [string, string]; likes: [boolean, boolean]; game: Game | null; matchType: "preferred" | "fallback"; commonGames: Kind[] };
@@ -123,6 +124,7 @@ function emitGame(room: Room) {
       roundWinner:game.rps.stage==="chant"?undefined:game.rps.roundWinner,roundChoices:undefined}:undefined,
     sceneReady:game.kind==="rps"?game.sceneReady:game.kind==="pong"?game.pongReady:undefined,
     memory:game.memory?memoryView(game.memory):undefined,
+    pongTargetPoints:game.pongTargetPoints,
     pong:game.pong?pongView(game.pong):undefined
   };
   io.to(room.id).emit("game:state",payload);
@@ -345,13 +347,17 @@ io.on("connection", socket => {
     const state=getRoom(socket);
     const kind=typeof raw==="string"?raw:(raw&&typeof raw==="object"?(raw as {kind?:unknown}).kind:null);
     if(!state||(kind!=="ttt"&&kind!=="rps"&&kind!=="memory"&&kind!=="pong"&&kind!=="forehead"))return;
+    const selectedPoints=kind==="pong"&&raw&&typeof raw==="object"?
+      (raw as {options?:{targetPoints?:unknown}}).options?.targetPoints:5;
+    if(kind==="pong"&&selectedPoints!==5&&selectedPoints!==10)return;
     if(state.room.game&&(state.room.game.phase!=="finished"||state.room.game.rps?.rematch)){
       socket.emit("system:notice","Finish or close your current game before inviting another one.");
       return;
     }
     // Pinoy Henyo has NO options at invitation time. Invitation -> category
     // approval by both -> difficulty/timer -> live match.
-    state.room.game={id:randomUUID(),kind,phase:"invite",by:state.side};
+    state.room.game={id:randomUUID(),kind,phase:"invite",by:state.side,
+      pongTargetPoints:kind==="pong"?selectedPoints as 5|10:undefined};
     emitGame(state.room);
   });
   socket.on("game:respond",(accept:unknown)=>{
@@ -368,7 +374,7 @@ io.on("connection", socket => {
     }
     if(game.kind==="rps"){game.phase="settings";emitGame(room);return;}
     if(game.kind==="pong"){
-      game.phase="loading";game.pong=createPong();game.pongReady=[false,false];
+      game.phase="loading";game.pong=createPong(game.pongTargetPoints??5);game.pongReady=[false,false];
       emitGame(room);return;
     }
     game.phase="playing";
@@ -442,7 +448,7 @@ io.on("connection", socket => {
     if(!st||game?.kind!=="pong"||game.phase!=="loading"||!game.pongReady||!game.pong
       ||!raw||typeof raw!=="object"||(raw as {id?:unknown}).id!==game.id)return;
     game.pongReady[st.side]=true;
-    if(game.pongReady.every(Boolean)){game.phase="playing";game.pong.lastTick=Date.now();game.pong.serveAt=Date.now()+900;}
+    if(game.pongReady.every(Boolean)){game.phase="playing";game.pong.lastTick=Date.now();game.pong.serveAt=Date.now()+3000;}
     emitGame(st.room);
   });
   socket.on("pong:drag",(raw:unknown)=>{

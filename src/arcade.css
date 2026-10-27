@@ -28,7 +28,8 @@
 .pong-score{display:flex;align-items:center;gap:12px;font-weight:900;border:1px solid var(--border);padding:10px 14px;background:var(--surface-alt);border-radius:13px}.pong-score.left{justify-content:flex-end}.pong-score.right{justify-content:flex-start}.pong-score span{font-size:10px;color:var(--muted)}.pong-score strong{font:900 29px "Outfit";color:var(--accent)}.pong-score.right strong{color:#f09e77}
 .pong-score.yours{border-color:var(--accent)}.pong-score-divider{font-size:10px;letter-spacing:1px;white-space:nowrap;font-weight:900;color:var(--muted)}
 .pong-court{position:relative;overflow:hidden;border:5px solid #504078;border-radius:18px;box-shadow:0 16px 45px #29204238}.pong-canvas{display:block;width:100%;aspect-ratio:1.6;height:auto;max-height:390px;touch-action:none;cursor:ns-resize;user-select:none}
-.pong-serve-note{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#141027b5;color:#fff;font-size:12px;font-weight:900;padding:10px 16px;border-radius:20px;pointer-events:none}
+.pong-serve-note{position:absolute;z-index:10;top:38%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;min-width:140px;background:#141027d9;color:#fff;font-size:11px;font-weight:850;text-align:center;padding:11px 16px;border:1px solid #a997ec88;border-radius:15px;box-shadow:0 8px 30px #120e2a99;pointer-events:none}
+.pong-serve-note strong{font:900 31px/1 "Outfit",sans-serif;color:#fff}
 .pong-controls{display:flex;align-items:center;justify-content:space-between;gap:11px;margin:13px 0;font-size:11px;color:var(--muted);line-height:1.5}.pong-my-paddle{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--text)}.paddle-key{width:5px;height:20px;border-radius:3px;background:#a38bff;display:inline-block}.paddle-key.right{background:#ffad83}
 .pong-fineprint{display:flex;justify-content:center;align-items:center;gap:6px;margin:0;color:var(--muted);font-size:10px}
 .arcade-mini{text-align:center;padding:12px 2px 6px}.arcade-mini p{font-size:11px;color:var(--muted);line-height:1.5;margin:5px 0 11px}.arcade-mini .primary-button{font-size:11px;padding:10px 12px}
@@ -118,6 +119,8 @@
 .pong-content .pong-floating-score strong{font:900 24px/1.15 "Outfit",sans-serif;color:#fff;font-variant-numeric:tabular-nums}
 .pong-content .pong-floating-score.opponent{border-color:#ab94ef;color:#d7c5ff}
 .pong-content .pong-floating-score.self{border-color:#ffac87;color:#ffd9c7;text-align:right;align-items:flex-end}
+.pong-content .pong-floating-score.team-0{border-color:#91a7bc;color:#d5e4ef}
+.pong-content .pong-floating-score.team-1{border-color:#e86c75;color:#ffd7da}
 .pong-content .pong-first-to{font-size:9px;font-weight:900;letter-spacing:1px;color:#f7edff;
  border:1px solid #ffffff38;background:#281f4a9c;border-radius:999px;padding:7px 10px;white-space:nowrap}
 .pong-content .pong-controls{
@@ -126,6 +129,8 @@
 }
 .pong-content .pong-my-paddle{font-size:11px;color:var(--text)}
 .pong-content .paddle-key.bottom{height:5px;width:21px;border-radius:4px;background:#ffac87}
+.pong-content .paddle-key.bottom.team-0{background:#91a7bc}
+.pong-content .paddle-key.bottom.team-1{background:#e86c75}
 @media(max-width:700px){
  .arcade-window.pong-window{height:100dvh;max-height:100dvh}
  .arcade-window.pong-window .arcade-content.pong-content{padding:6px 9px 10px}
@@ -158,6 +163,7 @@
 .pong-content .pong-swipe-hud{position:absolute;z-index:9;left:50%;bottom:14px;transform:translateX(-50%);
  width:min(82%,265px);padding:7px 10px;border:1px solid #ab9fd14f;border-radius:12px;
  background:#1d1c3fbd;color:#e8dffe;text-align:center;pointer-events:none;display:grid;gap:3px}
+.pong-content .pong-court[data-far-back="true"] .pong-swipe-hud{bottom:auto;top:70px}
 .pong-swipe-hud>span{font-size:9px;letter-spacing:.5px;font-weight:900}
 .pong-swipe-hud small{font-size:9px;color:#d4c5ea}
 .pong-swipe-track{height:8px;border-radius:10px;overflow:hidden;background:#ffffff27}

@@ -26,6 +26,12 @@ async function invite(a,b,name){
  const open=a.getByRole("button",{name:"Open mini games"});
  if(await open.isVisible())await open.click();
  await a.locator(".sidebar-game").filter({hasText:name}).filter({visible:true}).first().click();
+ if(name==="Ping Pong"){
+  const group=a.getByRole("group",{name:"Ping Pong target score"});
+  await group.getByRole("button",{name:"First to 10"}).click();
+  assert.equal(await group.getByRole("button",{name:"First to 10"}).getAttribute("aria-pressed"),"true");
+  await a.getByRole("button",{name:"Send invitation"}).click();
+ }
  await b.getByRole("button",{name:"Accept invitation"}).first().waitFor({timeout:8000});
  await b.getByRole("button",{name:"Accept invitation"}).first().click();
 }
@@ -55,11 +61,32 @@ try{
   console.log("PASS PONG scene ready on both players");
   assert.equal(await sa.getAttribute("data-paddle-model"),"blender",
    "The Blender paddle should load in the game");
+  assert.equal(await a.locator(".pong-first-to").textContent(),"FIRST TO 10 · WIN BY 2");
+  assert.equal(await b.locator(".pong-first-to").textContent(),"FIRST TO 10 · WIN BY 2");
+  assert.equal(await sa.getAttribute("data-self-paddle-color"),
+   await sb.getAttribute("data-opponent-paddle-color"));
+  assert.equal(await sb.getAttribute("data-self-paddle-color"),
+   await sa.getAttribute("data-opponent-paddle-color"));
+  assert.notEqual(await sa.getAttribute("data-self-paddle-color"),
+   await sb.getAttribute("data-self-paddle-color"));
   assert.ok(Number(await sa.getAttribute("data-self-paddle-reach"))<.05,
    "The paddle should start behind the near edge of the board");
   assert.ok(Number(await sa.getAttribute("data-camera-z"))>10.5,
    "The resting camera should sit behind the board");
   await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-rest-center-"+width+".png"});
+  await b.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-other-player-"+width+".png"});
+  const backRect=await sa.boundingBox();
+  await a.mouse.move(backRect.x+backRect.width*.5,backRect.y+backRect.height*.60);
+  await a.mouse.down();
+  await a.mouse.move(backRect.x+backRect.width*.5,backRect.y+backRect.height*.95);
+  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.selfPaddleReach)<-.4,
+   null,{timeout:5000});
+  await a.waitForFunction(()=>Number(document.querySelector(".pong-scene-3d")?.dataset.cameraZ)>12,
+   null,{timeout:5000});
+  await a.screenshot({path:"C:/Users/user/OneDrive/Desktop/Projects/Chat2Play/swipe-pong-far-back-"+width+".png"});
+  await a.mouse.move(backRect.x+backRect.width*.5,backRect.y+backRect.height*.60);
+  await a.mouse.up();
+  await a.waitForTimeout(550);
   await sa.evaluate(el=>{
    window.__pongMaxPower=0;
    new MutationObserver(()=>{window.__pongMaxPower=Math.max(window.__pongMaxPower,
