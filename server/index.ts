@@ -10,6 +10,8 @@ import { createMemory, createPong, memoryView, flipMemory, resolveMemoryMismatch
 import {createForehead,foreheadView,askCategory,answerCategory,submitGuess,skipForehead,advanceTurn,validForeheadOptions,isFinished,result,noteChatQuestion,answerChatQuestion,markSpokenCorrect,gestureAnswer,type ForeheadState,type ForeheadOptions} from "./forehead.js";
 import {validGameCategories,type GameCategory} from "./foreheadWordBank.js";
 import {RPS_CHOICE_MS,RPS_CHANT_TOTAL_MS,RPS_REVEAL_MS} from "../src/rpsTiming.js";
+import {peerSignalSchema,pongStateSchema,pongWinner,type PongNetwork,type PeerSignal} from "../src/pongProtocol.js";
+import {pongIceServers} from "./pongIce.js";
 
 type Gender = "woman" | "man" | "nonbinary" | "unspecified";
 type LookingFor = "any" | Exclude<Gender, "unspecified">;
@@ -27,6 +29,8 @@ type Game = {
     rematch?:{accepted:[boolean,boolean];expiresAt:number};
     roundChoices?:[Choice|null,Choice|null]};
   pongReady?:[boolean,boolean];
+  pongNetwork?:PongNetwork;
+  pongPeer?:{capable:[boolean,boolean];ready:[boolean,boolean];listening:[boolean,boolean];queued:[PeerSignal[],PeerSignal[]];deadline:number;checkpointAt:number;checkpointSeq:number;signals:[number,number]};
   pongTargetPoints?:5|10;
   id: string; memory?: MemoryState; pong?: PongState; forehead?: ForeheadState; foreheadOptions?:ForeheadOptions; foreheadCategories?:GameCategory[]; foreheadCategoryDraft?:GameCategory[]; categoryAgreement?:[boolean,boolean];sceneReady?:[boolean,boolean];micReady?:[boolean,boolean];
 };
@@ -129,7 +133,16 @@ function awardQuestion(room:Room){
 function questionMessage(room:Room,from:Side,text:string,kind:"winner-question"|"winner-answer"|"winner-skip"){
  io.to(room.id).emit("chat:message",{id:randomUUID(),kind,text,from,at:Date.now()});
 }
-function emitGame(room: Room) {
+function fallbackPong(room:Room){
+ const g=room.game;
+ if(g?.kind!=="pong"||!g.pong||!g.pongNetwork||g.pongNetwork.mode==="server")return;
+ g.pongNetwork={...g.pongNetwork,mode:"server",epoch:g.pongNetwork.epoch+1};
+ const now=Date.now();g.pong.lastTick=now;
+ g.pong.drag.forEach(d=>{d.active=false;d.travel=0;d.forwardStroke=0;});
+ if(g.pong.servePending)g.pong.serveAt=now+1500;
+ emitGame(room);
+}
+function emitGame(room: Room,transient=false) {
   const game=room.game;
   awardQuestion(room);
   // Secrets are projected per recipient; never broadcast both words to a room.
@@ -153,20 +166,32 @@ function emitGame(room: Room) {
     sceneReady:game.kind==="rps"?game.sceneReady:game.kind==="pong"?game.pongReady:undefined,
     memory:game.memory?memoryView(game.memory):undefined,
     pongTargetPoints:game.pongTargetPoints,
+    pongNetwork:game.pongNetwork,
     pong:game.pong?pongView(game.pong):undefined
   };
-  io.to(room.id).emit("game:state",payload);
+  // High-frequency physics is replaceable. Do not retain every tick in the
+  // 15-minute Socket.IO recovery buffer; reconnect sends a fresh snapshot.
+  const channel=io.to(room.id);
+  (transient?channel.volatile:channel).emit("game:state",payload);
 }
 setInterval(()=>{
   const now=Date.now();
   for(const room of rooms.values()){
     const game=room.game;
     if(game?.kind!=="pong"||game.phase!=="playing"||!game.pong)continue;
+    if(game.pongNetwork?.mode==="connecting"){
+      if(now>(game.pongPeer?.deadline??0))fallbackPong(room);
+      continue;
+    }
+    if(game.pongNetwork?.mode==="peer"){
+      if(now-(game.pongPeer?.checkpointAt??0)>5000)fallbackPong(room);
+      continue;
+    }
     // Pausing avoids giving the connected player an unfair win while their partner reconnects.
     if(room.players.some(id=>disconnectGrace.has(id))){game.pong.lastTick=now;game.pong.serveAt=Math.max(game.pong.serveAt,now+500);continue;}
     const winner=tickPong(game.pong,now);
     if(winner!==null){game.winner=winner;game.phase="finished";}
-    emitGame(room);
+    emitGame(room,game.phase==="playing");
   }
 },33);
 // RPS: one shared clock governs choices, two "Bato" beats, the final reveal,
@@ -310,6 +335,7 @@ io.on("connection", socket => {
     const state=getRoom(socket);
     if(state){
       const {room,side}=state;
+      fallbackPong(room);
       const peerId=room.players[otherSide(side)];
       socket.emit("session:state",{phase:"chat",side,partnerGender:profiles.get(peerId)?.gender||"unspecified",commonGames:room.commonGames,matchType:room.matchType});
       socket.emit("like:state",{yours:room.likes[side],theirs:room.likes[otherSide(side)],mutual:room.likes.every(Boolean)});
@@ -321,6 +347,7 @@ io.on("connection", socket => {
   socket.on("presence:activity",(raw:unknown)=>{
     if(typeof raw!=="boolean")return;
     const state=getRoom(socket);if(!state)return;
+    if(raw)fallbackPong(state.room);
     io.to(state.room.players[otherSide(state.side)]).emit("partner:activity",{away:raw});
   });
   socket.on("queue:join", (raw: unknown) => {
@@ -444,6 +471,8 @@ io.on("connection", socket => {
     if(game.kind==="rps"){game.phase="settings";emitGame(room);return;}
     if(game.kind==="pong"){
       game.phase="loading";game.pong=createPong(game.pongTargetPoints??5);game.pongReady=[false,false];
+      game.pongNetwork={mode:"server",epoch:0,host:0};
+      game.pongPeer={capable:[false,false],ready:[false,false],listening:[false,false],queued:[[],[]],deadline:0,checkpointAt:0,checkpointSeq:0,signals:[0,0]};
       emitGame(room);return;
     }
     game.phase="playing";
@@ -517,14 +546,79 @@ io.on("connection", socket => {
     if(!st||game?.kind!=="pong"||game.phase!=="loading"||!game.pongReady||!game.pong
       ||!raw||typeof raw!=="object"||(raw as {id?:unknown}).id!==game.id)return;
     game.pongReady[st.side]=true;
-    if(game.pongReady.every(Boolean)){game.phase="playing";game.pong.lastTick=Date.now();game.pong.serveAt=Date.now()+3000;}
+    if(game.pongPeer)game.pongPeer.capable[st.side]=(raw as {peer?:unknown}).peer===true;
+    if(game.pongReady.every(Boolean)){
+      const now=Date.now();game.phase="playing";game.pong.lastTick=now;game.pong.serveAt=now+3000;
+      if(game.pongPeer?.capable.every(Boolean)&&process.env.PONG_PEER_ENABLED!=="false"){
+        game.pongNetwork={mode:"connecting",epoch:1,host:0};game.pongPeer.deadline=now+15_000;
+      }
+    }
     emitGame(st.room);
+  });
+  socket.on("pong:ice",async(raw:unknown,ack?: (data:{iceServers:RTCIceServer[]})=>void)=>{
+    const st=getRoom(socket),g=st?.room.game;
+    if(typeof ack!=="function"||!st||g?.kind!=="pong"||g.pongNetwork?.mode!=="connecting"
+      ||!raw||typeof raw!=="object"||(raw as {id?:unknown}).id!==g.id)return;
+    ack({iceServers:await pongIceServers()});
+  });
+  socket.on("pong:signal",(raw:unknown)=>{
+    const st=getRoom(socket),g=st?.room.game,n=g?.pongNetwork,p=g?.pongPeer;
+    if(!st||g?.kind!=="pong"||n?.mode!=="connecting"||!p)return;
+    const parsed=peerSignalSchema.safeParse(raw);if(!parsed.success)return;
+    const d=parsed.data;if(d.id!==g.id||d.epoch!==n.epoch||p.signals[st.side]>=100)return;
+    if((d.signal.type==="offer"&&st.side!==n.host)||(d.signal.type==="answer"&&st.side===n.host))return;
+    p.signals[st.side]++;
+    const recipient=otherSide(st.side);
+    if(p.listening[recipient])io.to(st.room.players[recipient]).emit("pong:signal",d);
+    else p.queued[recipient].push(d);
+  });
+  socket.on("pong:peer-listening",(raw:unknown)=>{
+    const st=getRoom(socket),g=st?.room.game,n=g?.pongNetwork,p=g?.pongPeer;
+    if(!st||g?.kind!=="pong"||n?.mode!=="connecting"||!p||!raw||typeof raw!=="object")return;
+    const d=raw as {id?:unknown;epoch?:unknown};if(d.id!==g.id||d.epoch!==n.epoch)return;
+    p.listening[st.side]=true;
+    for(const signal of p.queued[st.side].splice(0))socket.emit("pong:signal",signal);
+  });
+  socket.on("pong:peer-ready",(raw:unknown)=>{
+    const st=getRoom(socket),g=st?.room.game,n=g?.pongNetwork,p=g?.pongPeer;
+    if(!st||g?.kind!=="pong"||n?.mode!=="connecting"||!p||!g.pong||!raw||typeof raw!=="object")return;
+    const d=raw as {id?:unknown;epoch?:unknown};if(d.id!==g.id||d.epoch!==n.epoch)return;
+    p.ready[st.side]=true;
+    if(p.ready.every(Boolean)){
+      const now=Date.now();n.mode="peer";p.checkpointAt=now;g.pong.lastTick=now;g.pong.serveAt=now+3000;
+      emitGame(st.room);
+      io.to(st.room.id).emit("pong:peer-start",{id:g.id,epoch:n.epoch,state:g.pong,serverNow:now});
+    }
+  });
+  socket.on("pong:peer-failed",(raw:unknown)=>{
+    const st=getRoom(socket),g=st?.room.game;
+    if(!st||g?.kind!=="pong"||!raw||typeof raw!=="object")return;
+    const d=raw as {id?:unknown;epoch?:unknown};
+    if(d.id===g.id&&d.epoch===g.pongNetwork?.epoch)fallbackPong(st.room);
+  });
+  socket.on("pong:checkpoint",(raw:unknown)=>{
+    const st=getRoom(socket),g=st?.room.game,n=g?.pongNetwork,p=g?.pongPeer;
+    if(!st||g?.kind!=="pong"||g.phase!=="playing"||n?.mode!=="peer"||st.side!==n.host||!p||!g.pong
+      ||!raw||typeof raw!=="object")return;
+    const d=raw as {id?:unknown;epoch?:unknown;seq?:unknown;state?:unknown};
+    if(d.id!==g.id||d.epoch!==n.epoch||typeof d.seq!=="number"||!Number.isSafeInteger(d.seq)||d.seq<=p.checkpointSeq)return;
+    const now=Date.now();if(now-p.checkpointAt<200)return;
+    const parsed=pongStateSchema.safeParse(d.state);if(!parsed.success)return;
+    const next=parsed.data;
+    if(next.targetPoints!==g.pong.targetPoints||next.firstServer!==g.pong.firstServer
+      ||Math.abs(next.lastTick-now)>15_000||next.serveAt>now+10_000
+      ||next.scores.some((score,i)=>score<g.pong!.scores[i]||score-g.pong!.scores[i]>1)
+      ||next.scores[0]+next.scores[1]-g.pong.scores[0]-g.pong.scores[1]>1)return;
+    g.pong=next;p.checkpointAt=now;p.checkpointSeq=d.seq;
+    const winner=pongWinner(next);
+    if(winner!==null){g.winner=winner;g.phase="finished";emitGame(st.room);}
   });
   socket.on("pong:drag",(raw:unknown)=>{
     const st=getRoom(socket),game=st?.room.game;
     if(!st||game?.kind!=="pong"||game.phase!=="playing"||!game.pong
       ||!raw||typeof raw!=="object")return;
     const val=raw as {id?:unknown;active?:unknown};
+    if(game.pongNetwork&&game.pongNetwork.mode!=="server")return;
     if(val.id!==game.id||typeof val.active!=="boolean")return;
     setPongDragging(game.pong,st.side,val.active);
     emitGame(st.room);
@@ -776,6 +870,7 @@ io.on("connection", socket => {
   socket.on("pong:paddle",(value:unknown)=>{
     const state=getRoom(socket);
     if(!state||state.room.game?.kind!=="pong"||state.room.game.phase!=="playing"||!state.room.game.pong)return;
+    if(state.room.game.pongNetwork&&state.room.game.pongNetwork.mode!=="server")return;
     if(typeof value==="number")movePaddle(state.room.game.pong,state.side,value);
     else if(value&&typeof value==="object"){
       const paddle=value as {y?:unknown;depth?:unknown;forwardStroke?:unknown};
@@ -844,6 +939,7 @@ io.on("connection", socket => {
     const state=getRoom(socket);
     if(!state){cleanupSocket(socket.id);return;}
     const {room,side}=state;
+    fallbackPong(room);
     io.to(room.players[otherSide(side)]).emit("partner:connection",{connected:false,graceMs:GRACE_MS});
     clearGrace(socket.id);
     const timer=setTimeout(()=>{

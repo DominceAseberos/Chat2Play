@@ -36,6 +36,8 @@
     "test:forehead:roles:small": "node server/henyo-roles-ui.mjs --small",
     "test:3d:games": "node server/three-games-ui.mjs",
     "test:pong:physics": "tsx server/pong-physics-smoke.ts",
+    "test:pong:peer": "tsx server/pong-peer-smoke.ts",
+    "test:pong:peer:ui": "node server/pong-peer-ui.mjs",
     "test:pong:serve:ui": "node server/pong-serve-ui.mjs",
     "test:winner-question": "tsx server/winner-question-smoke.ts",
     "test:winner-question:ui": "node server/winner-question-ui.mjs",

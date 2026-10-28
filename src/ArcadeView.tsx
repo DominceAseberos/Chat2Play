@@ -1,13 +1,15 @@
-import {lazy,Suspense} from "react";
+import {lazy,Suspense,useSyncExternalStore} from "react";
 const PongScene3D=lazy(()=>import("./PongScene3D"));
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleHelp, Crown, Gamepad2, Gem, Heart, Layers3, Moon, Sparkles, Star, Sun, Trophy, X, Zap } from "lucide-react";
 import type { Game, Kind, Side } from "./Pieces";
+import type {PongFrames} from "./usePongPeer";
 import "./arcade.css";
 
 type MemorySymbol = "sun" | "moon" | "heart" | "star" | "gem" | "zap";
 type ArcadeProps = {
  game: Game; side: Side; onFlip:(index:number)=>void;
+ pongFrames:PongFrames;
  onPaddle:(value:{y:number;depth:number;forwardStroke:number})=>void;
  onDrag:(active:boolean)=>void;onSceneReady:()=>void;
  onMinimize:()=>void; onClose:()=>void; onReplay:(kind:Kind)=>void;questionPending:boolean;
@@ -67,16 +69,17 @@ export function projectPongForSide(x:number,y:number,side:Side){
 export function paddleFromScreenX(x:number,side:Side){
  return Math.max(-.35,Math.min(1.35,side===0?x:1-x));
 }
-function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay,onChat,questionPending}:{game:Game;side:Side;
+function PongArena({game,side,pongFrames,onPaddle,onDrag,onSceneReady,onReplay,onChat,questionPending}:{game:Game;side:Side;pongFrames:PongFrames;
  onPaddle:(value:{y:number;depth:number;forwardStroke:number})=>void;onDrag:(active:boolean)=>void;onSceneReady:()=>void;onReplay:(kind:Kind)=>void;onChat:()=>void;questionPending:boolean}){
- const state=game.pong;
+ const peerFrame=useSyncExternalStore(pongFrames.subscribe,pongFrames.getSnapshot);
+ const state=game.phase==="playing"&&game.pongNetwork?.mode==="peer"?peerFrame??game.pong:game.pong;
  if(!state)return null;
  const opponent=side===0?1:0;
- return <section className="pong-game" aria-label="2 player Ping Pong">
+ return <section className="pong-game" aria-label="2 player Ping Pong" data-transport={game.pongNetwork?.mode??"server"}>
   <div className="pong-court">
    <Suspense fallback={<div className="pong-load-screen" role="status">Loading 3D physics engine?</div>}>
     <PongScene3D snapshot={state} side={side} onPaddle={onPaddle}
-     onDrag={onDrag} onReady={onSceneReady} active={game.phase==="playing"}/>
+     onDrag={onDrag} onReady={onSceneReady} active={game.phase==="playing"&&game.pongNetwork?.mode!=="connecting"}/>
    </Suspense>
    <div className="pong-floating-scores" aria-label={`Scores, first to ${state.targetPoints}, win by two`}>
     <div className={`pong-floating-score opponent team-${opponent}`}><span>STRANGER</span><strong>{state.scores[opponent]}</strong></div>
@@ -88,6 +91,7 @@ function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay,onChat,quest
      <small>{game.sceneReady?.[side]?"Your scene is ready. Waiting for your partner?":"Preparing physics and graphics?"}</small>
      <small>Player 1 {game.sceneReady?.[0]?"?":"?"} ? Player 2 {game.sceneReady?.[1]?"?":"?"}</small>
    </div>}
+   {game.pongNetwork?.mode==="connecting"&&<div className="pong-load-screen" role="status"><div className="spinner"/>Connecting players…<small>Your match will start shortly.</small></div>}
    {state.serving&&game.phase==="playing"&&<div className="pong-serve-note" role="status" aria-live="polite">
     {state.serveCountdown>0?<><strong>{state.serveCountdown}</strong><span>{state.server===side?"Get ready to serve":"Partner serving soon"}</span></>:
      <><strong>Serve!</strong><span>{state.server===side?"Swipe diagonally forward to aim left or right":"Waiting for your partner's serve"}</span></>}
@@ -101,7 +105,7 @@ function PongArena({game,side,onPaddle,onDrag,onSceneReady,onReplay,onChat,quest
   <div className="pong-controls"><span className="pong-my-paddle"><span className={`paddle-key bottom team-${side}`}/> Your paddle starts behind the table</span><span>Drag in any direction to strike</span></div>
  </section>;
 }
-export function ArcadeView({game,side,onFlip,onPaddle,onDrag,onSceneReady,onMinimize,onClose,onReplay,questionPending}:ArcadeProps){
+export function ArcadeView({game,side,pongFrames,onFlip,onPaddle,onDrag,onSceneReady,onMinimize,onClose,onReplay,questionPending}:ArcadeProps){
  const name=game.kind==="memory"?"Memory Duel":"Ping Pong";
  return <motion.div className="arcade-overlay" role="dialog" aria-label={name} aria-modal="true" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} transition={{duration:.2}}>
   <motion.div className={"arcade-window"+(game.kind==="pong"?" pong-window":"")} initial={{scale:.96,y:16}} animate={{scale:1,y:0}} exit={{scale:.97,y:10}} transition={{type:"spring",stiffness:330,damping:29}}>
@@ -111,7 +115,7 @@ export function ArcadeView({game,side,onFlip,onPaddle,onDrag,onSceneReady,onMini
    </header>
    <div className={"arcade-content"+(game.kind==="pong"?" pong-content":"")}>
     {game.kind==="memory"&&<div className="arcade-intro"><span className="arcade-live"><i/> MATCH IN PROGRESS</span><h2>Find the perfect pair.</h2><p>Remember the cards. Outmatch your new friend.</p></div>}
-    {game.kind==="pong"?<PongArena game={game} side={side} onPaddle={onPaddle} onDrag={onDrag} onSceneReady={onSceneReady} onReplay={onReplay} onChat={onMinimize} questionPending={questionPending}/>:game.phase==="finished"?<ResultBanner game={game} side={side} onReplay={onReplay} onChat={onMinimize} questionPending={questionPending}/>:<MemoryDuel game={game} side={side} onFlip={onFlip}/>}
+    {game.kind==="pong"?<PongArena game={game} side={side} pongFrames={pongFrames} onPaddle={onPaddle} onDrag={onDrag} onSceneReady={onSceneReady} onReplay={onReplay} onChat={onMinimize} questionPending={questionPending}/>:game.phase==="finished"?<ResultBanner game={game} side={side} onReplay={onReplay} onChat={onMinimize} questionPending={questionPending}/>:<MemoryDuel game={game} side={side} onFlip={onFlip}/>}
    </div>
    <footer className="arcade-footer"><span><Heart size={15}/> Play nice, have fun.</span><button type="button" onClick={onMinimize}>Minimize and chat <ArrowRight size={16}/></button></footer>
   </motion.div>

@@ -8,6 +8,7 @@ const LocalEmojiPicker = lazy(() => import("./LocalEmojiPicker"));
 import { useEffect, useState } from "react";
 import { Check, ChevronDown, ChevronUp, X, LoaderCircle, Search, CircleHelp, Heart, Flower2, Smile, Sparkles, MessageCircle, ShieldCheck, Moon, Sun, UserRound, Gamepad2, Circle, Grid3X3, Layers3, Orbit, Trophy, CircleX, ArrowRight } from "lucide-react";
 import {unlockRpsAudio} from "./rpsAudio";
+import type {PongNetwork} from "./pongProtocol";
 export type Gender = "unspecified" | "woman" | "man" | "nonbinary";
 export type Preference = "any" | "woman" | "man" | "nonbinary";
 export type Kind = "ttt" | "rps" | "memory" | "pong" | "forehead";
@@ -25,6 +26,7 @@ export type WinnerQuestionState={skipsLeft:[number,number];question:{
 export type Game = {
   id:string; kind:Kind; phase:"invite"|"categories"|"settings"|"mic"|"loading"|"playing"|"finished"; by:Side;
   pongTargetPoints?:5|10;
+  pongNetwork?:PongNetwork;
   foreheadOptions?:{difficulty:"easy"|"medium"|"hard";durationSeconds:number;categories:GameCategory[]};foreheadCategories?:GameCategory[];foreheadCategoryDraft?:GameCategory[];categoryAgreement?:[boolean,boolean];micReady?:[boolean,boolean];
   board?:(Side|null)[]; turn?:Side; winner?:Side|"draw"; ready:boolean[];
   reveal?:{choices:[Choice|null,Choice|null];winner:Side|"draw"};

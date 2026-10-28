@@ -59,7 +59,7 @@ try{
  assert.equal(a.recovered,true,"Socket.IO should recover same session");
  assert.equal(state.phase,"chat");
  const synchronized=event(b,"game:state",g=>g?.id===game.id&&g.phase==="playing");
- a.emit("memory:flip",0);
+ (game.memory.turn===state.side?a:b).emit("memory:flip",0);
  await synchronized;
  console.log("[PASS] transport interruption recovers the same real partner, game, and room");
  const gone=event(b,"partner:connection",v=>!v.connected);

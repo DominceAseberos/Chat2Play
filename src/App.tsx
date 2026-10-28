@@ -2,6 +2,7 @@ import {GAME_CATEGORIES,GAME_CATEGORY_LABELS,type GameCategory} from "../server/
 import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type ReactNode, type UIEvent } from "react";
 import { io } from "socket.io-client";
 import HenyoVoice from "./HenyoVoice";
+import {usePongPeer} from "./usePongPeer";
 import { ArcadeView } from "./ArcadeView";
 import {loadMatchingProfile,saveMatchingProfile,clearMatchingProfile} from "./savedProfile";
 import {lazy,Suspense} from "react";
@@ -69,6 +70,7 @@ function App(){
  const [matchType,setMatchType]=useState<"preferred"|"fallback">("preferred");
  const [messages,setMessages]=useState<ChatMessage[]>([]);
  const [game,setGame]=useState<Game|null>(null);
+ const pongTransport=usePongPeer(socket,game,side);
  const [winnerQuestion,setWinnerQuestion]=useState<WinnerQuestionState|null>(null);
  const [likes,setLikes]=useState<Like>(initialLike);
  const [draft,setDraft]=useState("");
@@ -605,11 +607,11 @@ function App(){
       onReplay={inviteToGame}/>
    </Suspense>}
    {mode==="chat"&&arcadeOpen&&game&&(game.kind==="memory"||game.kind==="pong")&&game.phase!=="invite"&&
-    <ArcadeView key={game.id} game={game} side={side} questionPending={questionActive}
+    <ArcadeView key={game.id} game={game} side={side} pongFrames={pongTransport.frames} questionPending={questionActive}
       onFlip={index=>{if(canChat)socket.emit("memory:flip",index);}}
-      onPaddle={y=>{if(canChat)socket.emit("pong:paddle",y);}}
-      onDrag={active=>{if(canChat)socket.emit("pong:drag",{id:game.id,active});}}
-      onSceneReady={()=>{if(canChat)socket.emit("pong:scene-ready",{id:game.id});}}
+      onPaddle={y=>{if(canChat)pongTransport.move(y);}}
+      onDrag={active=>{if(canChat)pongTransport.drag(active);}}
+      onSceneReady={()=>{if(canChat)pongTransport.sceneReady();}}
       onMinimize={()=>setArcadeOpen(false)}
       onClose={requestQuitGame}
       onReplay={inviteToGame}
