@@ -56,6 +56,9 @@ const winnerQuestionSchema=z.object({id:z.string().uuid(),text:z.string().trim()
 const winnerAnswerSchema=z.object({id:z.string().uuid(),text:z.string().trim().min(1).max(500)});
 const winnerSkipSchema=z.object({id:z.string().uuid()});
 const PORT = Number(process.env.PORT || 3001);
+// Mobile browsers may freeze background tabs and pause their network stack.
+// Keep the in-memory room long enough for the same Socket.IO session to resume.
+const RECONNECT_GRACE_MS=Math.max(1_000,Math.min(30*60_000,Number(process.env.RECONNECT_GRACE_MS)||15*60_000));
 const allowedOrigin = process.env.CLIENT_ORIGIN;
 const app = express();
 app.disable("x-powered-by");
@@ -86,7 +89,7 @@ const io = new Server(http, {
   serveClient: false,
   pingTimeout: 20_000,
   pingInterval: 10_000,
-  connectionStateRecovery: { maxDisconnectionDuration: 20_000, skipMiddlewares: false }
+  connectionStateRecovery: { maxDisconnectionDuration: RECONNECT_GRACE_MS, skipMiddlewares: false }
 });
 const profiles = new Map<string, Profile>();
 const waiting = new Map<string,number>();
@@ -99,7 +102,7 @@ const disconnectGrace = new Map<string, ReturnType<typeof setTimeout>>();
 const lastTyping = new Map<string, number>();
 const lastForeheadLook = new Map<string,number>();
 const recentMessageIds = new Map<string, Map<string, number>>();
- const GRACE_MS = Math.max(1_000,Math.min(30_000,Number(process.env.RECONNECT_GRACE_MS)||12_000));
+const GRACE_MS=RECONNECT_GRACE_MS;
 function clearGrace(id: string) { const timer = disconnectGrace.get(id); if(timer) clearTimeout(timer); disconnectGrace.delete(id); }
 function cleanupSocket(id: string) { clearGrace(id); lastChat.delete(id); lastTyping.delete(id); lastForeheadLook.delete(id);lastForeheadLook.delete(id+":gesture"); recentMessageIds.delete(id); blocked.delete(id); profiles.delete(id); waiting.delete(id); }
 

@@ -119,7 +119,23 @@ function App(){
  useEffect(()=>{localStorage.setItem("c2p:autoNext",String(autoConfirmNext));},[autoConfirmNext]);
  useEffect(()=>{soundsRef.current=typingSounds;localStorage.setItem("c2p:typingSounds",String(typingSounds));},[typingSounds]);
  useEffect(()=>{if(mode!=="chat"||messages.length){setTemporaryHint(false);return;}setTemporaryHint(true);const t=window.setTimeout(()=>setTemporaryHint(false),6000);return()=>window.clearTimeout(t);},[mode,messages.length===0]);
- useEffect(()=>{const emit=()=>{if(socket.connected)socket.emit("presence:activity",document.hidden);};document.addEventListener("visibilitychange",emit);const onOnline=()=>{if(!socket.connected)socket.connect();};window.addEventListener("online",onOnline);return()=>{document.removeEventListener("visibilitychange",emit);window.removeEventListener("online",onOnline);};},[socket]);
+ useEffect(()=>{
+  const syncActivity=()=>{
+   if(!document.hidden&&!socket.connected)socket.connect();
+   if(socket.connected)socket.emit("presence:activity",document.hidden);
+  };
+  const resume=()=>{if(!socket.connected)socket.connect();else socket.emit("presence:activity",false);};
+  document.addEventListener("visibilitychange",syncActivity);
+  window.addEventListener("online",resume);
+  window.addEventListener("focus",resume);
+  window.addEventListener("pageshow",resume);
+  return()=>{
+   document.removeEventListener("visibilitychange",syncActivity);
+   window.removeEventListener("online",resume);
+   window.removeEventListener("focus",resume);
+   window.removeEventListener("pageshow",resume);
+  };
+ },[socket]);
  function unlockTypingAudio(){if(!typingSounds)return;try{const ctx=soundCtx.current||new AudioContext();soundCtx.current=ctx;if(ctx.state==="suspended")void ctx.resume().catch(()=>{});}catch{/* Device does not support audio; typing dots still work. */}}
  function playTypingTone(){
    if(!soundsRef.current||document.hidden||Date.now()-lastTypingTone.current<3500)return;
@@ -492,7 +508,7 @@ function App(){
        <Gamepad2 size={17}/><span>{questionActive?"Winner's question is ready in chat":game.rps?.rematch?game.rps.rematch.accepted[side]?"Waiting for your partner to accept the rematch":"Your partner requested a rematch":game.phase==="finished"?"Rock Paper Scissors is complete":game.rps?.pausedBy?.[side]?"Game paused while you're in chat":game.rps?.pausedBy?.some(Boolean)?"Game paused · Partner is outside":"Rock Paper Scissors is in progress"}</span><strong>{questionActive?"Question below":"Return to game"}</strong><ArrowRight size={16}/>
       </button>}
      {temporaryHint&&<div className="temporary-top-hint" role="status"><LockKeyhole size={13}/> Messages disappear when this chat ends</div>}
-     {!partnerConnected&&connected&&<div className="partner-connection-banner" role="status"><Spinner/> Stranger disconnected. Waiting briefly for reconnection...</div>}
+     {!partnerConnected&&connected&&<div className="partner-connection-banner" role="status"><Spinner/> Stranger is away. Holding this chat while they reconnect...</div>}
      <div className="chat-body">
        <div className="conversation">
         <div className={"conversation-scroll"+(messages.length?" has-messages":"")} role="log" aria-label="Temporary chat messages" aria-live="polite" onScroll={onConversationScroll}>
@@ -599,7 +615,7 @@ function App(){
       onReplay={inviteToGame}
     />}
   </AnimatePresence>
-  {connectionIssue&&<div className="network-recovery" role="status"><WifiOff size={20}/><div><strong>Connection interrupted</strong><span>{connected?"Restoring chat...":"Trying to reconnect. Your chat is held briefly."}</span></div><button type="button" onClick={()=>socket.connect()} disabled={socket.connected}><RotateCcw size={16}/> Retry</button></div>}
+  {connectionIssue&&<div className="network-recovery" role="status"><WifiOff size={20}/><div><strong>Connection interrupted</strong><span>{connected?"Restoring chat...":"Trying to reconnect. Your chat is being held for you."}</span></div><button type="button" onClick={()=>socket.connect()} disabled={socket.connected}><RotateCcw size={16}/> Retry</button></div>}
   <footer className="footer"><span>chat2play · Conversations are temporary</span><span><ShieldCheck size={15}/> Be kind, stay safe, have fun.</span></footer>
   {notice&&mode==="chat"&&<div className="toast" role="status">{notice}<button type="button" aria-label="Dismiss" onClick={()=>setNotice("")}><X size={17}/></button></div>}
   <Modal open={!!expandedMessage} onOpenChange={open=>{if(!open)setExpandedMessage(null);}} title="Full message" description="Read this message in parts, without scrolling.">

@@ -12,3 +12,5 @@ services:
         value: production
       - key: NODE_VERSION
         value: 24.14.1
+      - key: RECONNECT_GRACE_MS
+        value: 900000

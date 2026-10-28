@@ -45,8 +45,14 @@ try{
  const dropped=event(b,"partner:connection",v=>!v.connected);
  const resumed=event(b,"partner:connection",v=>v.connected);
  const restored=event(a,"session:state",v=>v.phase==="chat");
+ a.io.reconnection(false);
  a.io.engine.close();
  await dropped;
+ // Simulate a backgrounded mobile tab whose reconnect timers were frozen.
+ // Returning before the configured grace expires must restore the same room.
+ await new Promise(resolve=>setTimeout(resolve,1_500));
+ a.io.reconnection(true);
+ a.connect();
  const state=await restored;
  await resumed;
  assert.equal(a.connected,true);
